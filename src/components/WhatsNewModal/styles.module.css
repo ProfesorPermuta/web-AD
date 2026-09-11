@@ -1,0 +1,141 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: var(--ifm-background-surface-color, #fff);
+  border: 2px solid var(--ifm-color-primary);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 520px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.title {
+  color: var(--ifm-color-primary);
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.changeList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.changeItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--ifm-font-color-base);
+  line-height: 1.5;
+}
+
+.tag {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  margin-top: 0.1rem;
+}
+
+.tagNew {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.tagImprove {
+  background: #fef9c3;
+  color: #ca8a04;
+}
+
+.tagFix {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.changeText {
+  flex: 1;
+}
+
+.button {
+  display: block;
+  width: 100%;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.button:hover {
+  background: var(--ifm-color-primary-dark);
+}
+
+.changeLink {
+  color: var(--ifm-color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.changeLink:hover {
+  color: var(--ifm-color-primary-dark);
+}
+
+/* Dark mode tag adjustments */
+[data-theme='dark'] .tagNew {
+  background: #14532d;
+  color: #86efac;
+}
+
+[data-theme='dark'] .tagImprove {
+  background: #713f12;
+  color: #fde047;
+}
+
+[data-theme='dark'] .tagFix {
+  background: #7f1d1d;
+  color: #fca5a5;
+}

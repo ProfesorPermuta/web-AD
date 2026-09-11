@@ -1,0 +1,44 @@
+.wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin: 2.5rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+}
+
+.button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.8rem 1.6rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.button:hover {
+  background: var(--ifm-color-primary-dark);
+  color: #fff;
+  text-decoration: none;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
