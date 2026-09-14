@@ -224,8 +224,10 @@ dominio esbozado y el repositorio publicado.
 | [d](/tema-0/d-docker-servicios-datos) | Docker y Docker Compose: los servicios de datos |
 | [e](/tema-0/e-anatomia-spring-boot) | Anatomía de un proyecto Spring Boot |
 | [f](/tema-0/f-inyeccion-dependencias) | IoC, inyección de dependencias y arquitectura en capas |
-| [g](/tema-0/g-flujo-git) | Flujo de trabajo con Git |
-| [h](/tema-0/h-actividades) | Actividades A0.1 – A0.5 |
+| [g](/tema-0/g-controlador-rest-validacion) | Controladores REST y validación de entrada |
+| [h](/tema-0/h-flujo-git) | Flujo de trabajo con Git |
+| [i](/tema-0/i-actividades) | Actividades A0.1 – A0.6 |
+| [j](/tema-0/j-chuleta-anotaciones) | Chuleta de anotaciones: Lombok y Spring Framework |
 
 <NextPageButton to="/tema-0/b-proyecto-multagal">
 El proyecto MULTAGAL

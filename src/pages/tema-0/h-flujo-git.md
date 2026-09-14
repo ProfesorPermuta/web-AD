@@ -244,7 +244,8 @@ git tag -n              # listar etiquetas con su mensaje
 git show entrega-1      # ver a qué commit apunta
 ```
 
-:::danger[La etiqueta es la entrega]
+:::danger
+[La etiqueta es la entrega]
 
 Se corrige exactamente el commit al que apunta la etiqueta, con la fecha y hora
 en que se subió. Lo que hagas después no cuenta. Etiqueta **antes** del plazo,
@@ -340,7 +341,9 @@ git switch -                  # volver a la rama anterior
 git stash / git stash pop     # guardar el trabajo a medias
 ```
 
-:::warning[Nunca reescribas historia ya publicada]
+:::warning
+
+[Nunca reescribas historia ya publicada]
 
 `git commit --amend`, `git rebase` y `git push --force` sobre commits que ya
 están en `origin` rompen el repositorio para quien lo haya clonado, y en este
@@ -351,7 +354,8 @@ local, y nunca sobre `main`.
 
 ## Errores frecuentes
 
-:::note[«Se me olvidó crear la rama y he trabajado en `main`»]
+:::note
+[«Se me olvidó crear la rama y he trabajado en `main`»]
 
 Si aún no has hecho `push`:
 
@@ -363,7 +367,8 @@ git reset --hard origin/main      # main vuelve al estado remoto
 
 :::
 
-:::note[«`push` rechazado: fetch first»]
+:::note
+[«`push` rechazado: fetch first»]
 
 El remoto tiene commits que tú no. Integra antes de subir:
 
@@ -374,13 +379,14 @@ git push
 
 :::
 
-:::note[«He commiteado el `.env`»]
+:::note
+[«He commiteado el `.env`»]
 
 Sácalo del seguimiento, añádelo al `.gitignore` **y cambia todas las
 contraseñas**. Estén o no en el último commit, siguen en el historial.
 
 :::
 
-<NextPageButton to="/tema-0/h-actividades">
+<NextPageButton to="/tema-0/i-actividades">
 Actividades de la unidad
 </NextPageButton>

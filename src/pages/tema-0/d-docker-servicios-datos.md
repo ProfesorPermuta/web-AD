@@ -7,7 +7,7 @@ import NextPageButton from '@site/src/components/NextPageButton';
 
 # Docker y Docker Compose
 
-Durante el curso vas a necesitar **tres gestores de bases de datos distintos**:
+Durante el curso vamos a necesitar **tres gestores de bases de datos distintos**:
 MariaDB (UD3), PostgreSQL con PostGIS (UD5) y MongoDB (UD6). Instalarlos
 nativamente en tu equipo significaría tres instaladores, tres servicios
 arrancando al iniciar el sistema, tres configuraciones que ajustar y una
@@ -21,7 +21,8 @@ Un **contenedor** es un proceso aislado que se ejecuta sobre el núcleo del
 sistema anfitrión, con su propio sistema de ficheros, su propia red y sus
 propios límites de recursos.
 
-:::info[Contenedor ≠ máquina virtual]
+:::info
+[Contenedor ≠ máquina virtual]
 
 Una máquina virtual emula hardware completo y arranca un sistema operativo
 entero: consume gigabytes y tarda minutos. Un contenedor comparte el núcleo del
@@ -44,7 +45,8 @@ portátil sin que se note.
 | **Registro** | Repositorio de imágenes. Por defecto, Docker Hub. |
 | **Compose** | Herramienta que define varios servicios en un único fichero YAML. |
 
-:::danger[Sin volumen no hay datos]
+:::danger
+[Sin volumen no hay datos]
 
 Todo lo que un contenedor escribe en su propio sistema de ficheros **se pierde**
 al destruirlo. Si no declaras un volumen para el directorio de datos de la base,
@@ -68,7 +70,8 @@ docker compose version
 docker run --rm hello-world
 ```
 
-:::warning[`docker compose` con espacio]
+:::
+warning[`docker compose` con espacio]
 
 La versión antigua era `docker-compose` (con guion, un binario aparte). La
 actual es `docker compose` (subcomando, plugin v2). Usa siempre la segunda; la

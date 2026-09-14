@@ -3,11 +3,13 @@ title: 'Actividades de la UD0'
 description: Actividades A0.1 a A0.5 del arranque del proyecto MULTAGAL, con sus criterios de aceptación.
 ---
 
+import NextPageButton from '@site/src/components/NextPageButton';
+
 # Actividades de la UD0
 
-Cinco actividades, 6 horas. Al terminarlas debes tener el entorno verificado, el
-proyecto arrancando, el dominio esbozado, una vertical mínima probada y el
-repositorio publicado con su primera etiqueta.
+Seis actividades, 7 horas. Al terminarlas debes tener el entorno verificado, el
+proyecto arrancando, el dominio esbozado, una vertical mínima probada y
+expuesta por HTTP, y el repositorio publicado con su primera etiqueta.
 
 :::info[Entrega]
 
@@ -49,8 +51,7 @@ docker compose version
 |---|----------|
 | 1 | `java -version` responde 25.x |
 | 2 | `mvn -version` confirma que usa el JDK 25 |
-| 3 | `docker run --rm hello-world` funciona sin `sudo` |
-| 4 | El IDE reconoce el nivel de lenguaje 25 |
+| 3 | todos los comandos han encontrado versiones validas |
 
 ---
 
@@ -144,7 +145,8 @@ Como mínimo:
 | 4 | Ningún tipo del paquete `domain` importa nada de Spring |
 | 5 | El ADR justifica las decisiones, no sólo las describe |
 
-:::tip[Sobre el criterio 4]
+:::tip
+[Sobre el criterio 4]
 
 Es la regla de dependencia del [apartado
 f](/tema-0/f-inyeccion-dependencias#la-regla-de-dependencia). Si tu
@@ -200,7 +202,6 @@ Código y pruebas, con `./mvnw test` en verde.
 | 5 | El servicio no tiene estado mutable |
 
 :::warning
-
 [Los límites importan]
 
 «Dentro de los 20 días naturales siguientes» — ¿el día 20 entra o no entra? Esa
@@ -212,20 +213,81 @@ un procedimiento sancionador real tienen consecuencias jurídicas.
 
 ---
 
-## A0.5 — Publicación del repositorio y configuración de ramas
+## A0.5 — Controladores REST para el servicio de expedientes
+
+**Objetivo:** exponer por HTTP el servicio construido en A0.4, con validación
+de entrada por anotaciones.
+
+### Tareas
+
+1. Crea en `dto` los DTOs de entrada y salida necesarios para el recurso
+   `expedientes`: como mínimo `NuevoExpedienteRequest` (o equivalente) y
+   `ExpedienteResponse`. Sigue el ejemplo del [apartado
+   g](/tema-0/g-controlador-rest-validacion#el-dto-de-entrada).
+2. Anota los campos del DTO de entrada con las restricciones de [Bean
+   Validation](/tema-0/g-controlador-rest-validacion#anotaciones-de-bean-validation-más-usadas)
+   que correspondan a cada campo (número obligatorio, importe positivo,
+   formato de matrícula...).
+3. Crea `ExpedientesController` en `controller`, con inyección por
+   constructor de `ServicioExpedientes`, y expón como mínimo:
+   - `POST /api/expedientes` — crea un expediente a partir del DTO validado
+     con `@Valid`. Responde `201 Created`.
+   - `GET /api/expedientes/{numero}` — devuelve el expediente o dispara la
+     excepción de «no encontrado».
+4. Crea un `@RestControllerAdvice` que traduzca:
+   - los errores de validación del DTO a `400 Bad Request` con el detalle de
+     cada campo, siguiendo el [ejemplo del apartado
+     g](/tema-0/g-controlador-rest-validacion#un-manejador-de-errores-centralizado);
+   - `ExpedienteNoEncontradoException` a `404 Not Found`.
+5. Comprueba manualmente con `curl` o el cliente REST de tu IDE:
+   - una petición válida (`201`);
+   - una petición con el número en blanco y el importe negativo (`400`, con
+     los dos campos en el cuerpo del error);
+   - una consulta de un expediente inexistente (`404`).
+
+### Entregable
+
+Código del controlador, los DTOs y el manejador de errores, con la
+aplicación arrancando y respondiendo a las tres comprobaciones del punto 5.
+
+### Criterios de aceptación
+
+| # | Criterio |
+|---|----------|
+| 1 | El controlador depende del servicio por **interfaz de `service`**, nunca del repositorio directamente |
+| 2 | El DTO de entrada usa Bean Validation y el método del controlador lleva `@Valid` |
+| 3 | Una petición inválida responde `400` con el detalle de qué campo falló y por qué |
+| 4 | Un expediente inexistente responde `404`, no `500` ni `200` con cuerpo vacío |
+| 5 | El DTO de entrada **no valida nada que dependa del repositorio** (duplicados, existencia) |
+
+:::warning
+[Sobre el criterio 5]
+
+El número de expediente duplicado ya lo rechaza `ServicioExpedientes` desde
+la A0.4: esa comprobación **no se repite** en el DTO. Un DTO sólo valida la
+forma del dato; que ya exista es lógica de negocio y vive en el `service`.
+Repasa la distinción en el [apartado
+g](/tema-0/g-controlador-rest-validacion#qué-no-va-en-la-validación-del-dto)
+si tienes dudas.
+
+:::
+
+---
+
+## A0.6 — Publicación del repositorio y configuración de ramas
 
 **Objetivo:** establecer el flujo de trabajo profesional del curso.
 
 ### Tareas
 
 1. Crea el `.gitignore` y el `.gitattributes` del
-   [apartado g](/tema-0/g-flujo-git) **antes** del primer commit.
+   [apartado h](/tema-0/h-flujo-git) **antes** del primer commit.
 2. Inicializa el repositorio, crea el remoto **privado** y añade al profesorado
    como colaborador.
 3. Redacta un `README.md` con: descripción del proyecto, requisitos previos,
    cómo levantar los servicios, cómo arrancar la aplicación y cómo ejecutar las
    pruebas.
-4. Reorganiza el trabajo de A0.2–A0.4 en **commits con sentido**, siguiendo
+4. Reorganiza el trabajo de A0.2–A0.5 en **commits con sentido**, siguiendo
    Conventional Commits. No vale un único commit con todo.
 5. Trabaja en la rama `hito/ud0-arranque`, abre un pull request hacia `main`,
    autorrevísalo leyendo el diff completo y fusiónalo con `--no-ff`.
@@ -281,6 +343,11 @@ consultar los apuntes**. Son el tipo de preguntas de la defensa oral.
 12. ¿Por qué los importes van en `BigDecimal` y no en `double`?
 13. ¿Qué evidencia aporta el historial de commits a la evaluación?
 14. ¿Qué diferencia hay entre una etiqueta y una rama?
+15. ¿Qué diferencia hay entre validar un DTO con `@Valid` y validar una regla
+    de negocio como «el DNI ya está registrado»? ¿Por qué la segunda no puede
+    resolverse en el DTO?
+16. ¿Qué ocurre si un método de controlador recibe `@RequestBody` sin
+    `@Valid`?
 
 ## Ampliación (opcional)
 
@@ -299,3 +366,7 @@ sobresaliente:
   UD3, cuando necesites volumen para que las consultas sean interesantes.
 - **Diagrama del dominio.** Elabora el diagrama entidad-relación completo de
   MULTAGAL e inclúyelo en el README. Te servirá de guía durante todo el curso.
+
+<NextPageButton to="/tema-0/j-chuleta-anotaciones">
+Chuleta de anotaciones: Lombok y Spring Framework
+</NextPageButton>

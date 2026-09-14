@@ -13,7 +13,8 @@ posterior.
 
 ## Por qué Spring Boot desde el primer día
 
-:::info[Decisión metodológica]
+:::info
+[Decisión metodológica]
 
 - **Empleabilidad.** En el ecosistema Java profesional, la persistencia se hace
   con Spring de forma abrumadoramente mayoritaria. Retrasar su introducción al
@@ -29,7 +30,8 @@ posterior.
 
 :::
 
-:::danger[Exigencia explícita]
+:::danger
+[Exigencia explícita]
 
 En todos los casos se te exigirá **conocer y justificar qué hace el framework
 por debajo**. Que Spring Data te genere un `findByMatricula()` sin escribir SQL
@@ -46,7 +48,7 @@ Ve a [start.spring.io](https://start.spring.io) y configura:
 |-------|-------|
 | Project | **Maven** |
 | Language | **Java** |
-| Spring Boot | 3.x (la última estable, no SNAPSHOT ni M) |
+| Spring Boot | 4.x (la última estable, no SNAPSHOT ni M) |
 | Group | `es.edu.multagal` |
 | Artifact | `multagal` |
 | Name | `multagal` |
@@ -101,7 +103,8 @@ multagal/
         └── resources/
 ```
 
-:::warning[`src/main/resources` no es una carpeta cualquiera]
+:::warning
+[`src/main/resources` no es una carpeta cualquiera]
 
 Todo lo que hay en `resources` se empaqueta **dentro del JAR**. Eso significa
 que no es un directorio del sistema de ficheros en tiempo de ejecución: no
@@ -230,7 +233,8 @@ equivalente a tres:
 | `@ComponentScan` | Escanea **este paquete y todos sus subpaquetes** buscando componentes que registrar. |
 | `@EnableAutoConfiguration` | Configura automáticamente el contexto según lo que encuentre en el *classpath*. |
 
-:::danger[El paquete raíz importa]
+:::danger
+[El paquete raíz importa]
 
 `@ComponentScan` escanea desde el paquete de la clase anotada **hacia abajo**.
 Si `MultagalApplication` está en `es.edu.multagal` y creas un servicio en
@@ -342,7 +346,8 @@ SPRING_PROFILES_ACTIVE=prod java -jar target/multagal-0.1.0-SNAPSHOT.jar
 java -Dspring.profiles.active=prod -jar target/multagal.jar
 ```
 
-:::tip[Sustitución de variables de entorno]
+:::tip
+[Sustitución de variables de entorno]
 
 `${MARIADB_PASSWORD}` en el YAML se resuelve contra las variables de entorno del
 proceso. Ese es el mecanismo por el que **las credenciales nunca aparecen en el
@@ -409,14 +414,16 @@ sin instalar nada más. En la UD7 lo meteremos en una imagen Docker.
 
 ## Problemas frecuentes
 
-:::note[«Web server failed to start. Port 8080 was already in use»]
+:::note
+[«Web server failed to start. Port 8080 was already in use»]
 
 Tienes otra instancia corriendo, seguramente desde el IDE. Párala, o cambia el
 puerto con `--server.port=8081`.
 
 :::
 
-:::note[«Failed to configure a DataSource: 'url' attribute is not specified»]
+:::note
+[«Failed to configure a DataSource: 'url' attribute is not specified»]
 
 Has añadido `spring-boot-starter-data-jpa` o `-jdbc` al `pom.xml` pero no has
 configurado la base. La autoconfiguración detecta el starter e intenta crear el
@@ -425,7 +432,8 @@ hasta que lo necesites.
 
 :::
 
-:::note[Lombok: el IDE marca errores donde `mvn` compila bien]
+:::note
+[Lombok: el IDE marca errores donde `mvn` compila bien]
 
 Lombok genera código en tiempo de compilación mediante un procesador de
 anotaciones. IntelliJ necesita la opción *Enable annotation processing*

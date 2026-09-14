@@ -1,47 +1,3 @@
-// import type {ReactNode} from 'react';
-// import clsx from 'clsx';
-// import Link from '@docusaurus/Link';
-// import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-// import Layout from '@theme/Layout';
-// import Heading from '@theme/Heading';
-
-// import styles from './index.module.css';
-
-// type Tema = {
-//   title: string;
-//   path: string;
-//   items: {label: string; to: string}[];
-// };
-
-// // ─── ÍNDICE DE CONTENIDOS ─────────────────────────────────────────────────────
-// // Añade aquí cada tema conforme se vaya creando el contenido en src/pages/tema-N/.
-// // Recuerda replicar la entrada correspondiente en el dropdown "Temas"
-// // de docusaurus.config.ts.
-// //
-// //   {
-// //     title: 'Tema 0 — Título del tema',
-// //     path: '/tema-0',
-// //     items: [
-// //       { label: 'Introducción', to: '/tema-0/a-introduccion' },
-// //     ],
-// //   },
-// // ─────────────────────────────────────────────────────────────────────────────
-// const TEMAS: Tema[] = [
-//   {
-//     title: 'Tema 0 — Arranque: entorno, Spring Boot y el proyecto MULTAGAL',
-//     path: '/tema-0',
-//     items: [
-//       {label: 'Presentación del módulo', to: '/tema-0/a-presentacion-modulo'},
-//       {label: 'El proyecto MULTAGAL', to: '/tema-0/b-proyecto-multagal'},
-//       {label: 'Entorno de desarrollo', to: '/tema-0/c-entorno-desarrollo'},
-//       {label: 'Docker y servicios de datos', to: '/tema-0/d-docker-servicios-datos'},
-//       {label: 'Anatomía de un proyecto Spring Boot', to: '/tema-0/e-anatomia-spring-boot'},
-//       {label: 'Inyección de dependencias', to: '/tema-0/f-inyeccion-dependencias'},
-//       {label: 'Flujo de trabajo con Git', to: '/tema-0/g-flujo-git'},
-//       {label: 'Actividades', to: '/tema-0/h-actividades'},
-//     ],
-//   }
-// ];
 import type {ReactNode} from 'react';
 import clsx from 'clsx';
 import Link from '@docusaurus/Link';
@@ -72,8 +28,25 @@ const TEMAS: Tema[] = [
       {label: 'Docker y servicios de datos', href: '/tema-0/d-docker-servicios-datos'},
       {label: 'Anatomía de un proyecto Spring Boot', href: '/tema-0/e-anatomia-spring-boot'},
       {label: 'Inyección de dependencias', href: '/tema-0/f-inyeccion-dependencias'},
-      {label: 'Flujo de trabajo con Git', href: '/tema-0/g-flujo-git'},
-      {label: 'Actividades', href: '/tema-0/h-actividades'}
+      {label: 'Controladores REST y validación de entrada', href: '/tema-0/g-controlador-rest-validacion'},
+      {label: 'Flujo de trabajo con Git', href: '/tema-0/h-flujo-git'},
+      {label: 'Actividades', href: '/tema-0/i-actividades'},
+      {label: 'Chuleta de anotaciones: Lombok y Spring', href: '/tema-0/j-chuleta-anotaciones'}
+    ],
+  },
+  {
+    n: 1,
+    title: 'Gestión de ficheros y directorios',
+    color: '#2563eb',
+    pages: [
+      {label: 'Presentación de la unidad', href: '/tema-1/a-presentacion-tema'},
+      {label: 'Path, Paths y Files', href: '/tema-1/b-path-files'},
+      {label: 'Recorrido de árboles, atributos y permisos', href: '/tema-1/c-recorrido-arboles'},
+      {label: 'WatchService', href: '/tema-1/d-watchservice'},
+      {label: 'Acceso secuencial y aleatorio', href: '/tema-1/e-acceso-secuencial-aleatorio'},
+      {label: 'Excepciones y configuración de rutas', href: '/tema-1/f-excepciones-config'},
+      {label: 'Streaming de ficheros binarios grandes', href: '/tema-1/g-streaming-binarios'},
+      {label: 'Actividades', href: '/tema-1/h-actividades'},
     ],
   },
 ];

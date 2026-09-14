@@ -326,11 +326,11 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 
 | UD | Título | Horas | RA | Ev. |
 |----|--------|-------|----|-----|
-| UD0 | Arranque: entorno, Spring Boot y el proyecto MULTAGAL | 6 | — | 1ª |
+| UD0 | Arranque: entorno, Spring Boot y el proyecto MULTAGAL | 7 | — | 1ª |
 | UD1 | Gestión de ficheros y directorios | 8 | RA1 | 1ª |
 | UD2 | Flujos, serialización y formatos de intercambio | 10 | RA1, RA6 | 1ª |
 | UD3 | Conectores y acceso relacional con JDBC | 12 | RA2, RA6 | 1ª |
-| UD4 | Mapeo objeto-relacional con JPA e Hibernate | 14 | RA3, RA6 | 2ª |
+| UD4 | Mapeo objeto-relacional con JPA e Hibernate | 13 | RA3, RA6 | 2ª |
 | UD5 | Bases de datos objeto-relacionales y orientadas a objetos | 10 | RA4, RA6 | 2ª |
 | UD6 | Bases de datos documentales nativas | 10 | RA5, RA6 | 3ª |
 | UD7 | Componentes de acceso a datos, integración y despliegue | 10 | RA6 | 3ª |
@@ -341,7 +341,7 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 ---
 
 #### UD0 — ARRANQUE: ENTORNO, SPRING BOOT Y EL PROYECTO MULTAGAL
-**6 horas · 1ª evaluación**
+**7 horas · 1ª evaluación**
 
 **Objetivos**
 - Configurar un entorno de desarrollo completo y reproducible.
@@ -361,6 +361,8 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 - Inversión de control e inyección de dependencias. Estereotipos `@Component`,
   `@Service`, `@Repository`, `@Configuration`.
 - Arquitectura en capas del proyecto y convenciones de paquetes.
+- Controladores REST y validación de entrada por anotaciones (Bean
+  Validation), distinguiendo validación de forma y validación de negocio.
 - Flujo de trabajo con Git: ramas por hito, mensajes de commit, *pull requests*.
 
 **Actividades**
@@ -368,7 +370,8 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 - A0.2. Generación del esqueleto del proyecto y primer arranque.
 - A0.3. Creación de los modelos de dominio (POJOs/records) de MULTAGAL.
 - A0.4. Primer servicio inyectado y su prueba unitaria.
-- A0.5. Publicación del repositorio y configuración de ramas.
+- A0.5. Controladores REST para el servicio de expedientes.
+- A0.6. Publicación del repositorio y configuración de ramas.
 
 ---
 
@@ -494,7 +497,7 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 ---
 
 #### UD4 — MAPEO OBJETO-RELACIONAL CON JPA E HIBERNATE
-**14 horas · 2ª evaluación · RA3, RA6.e**
+**13 horas · 2ª evaluación · RA3, RA6.e**
 
 **Objetivos**
 - Instalar, configurar y explotar una herramienta ORM.

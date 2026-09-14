@@ -41,7 +41,8 @@ Funciona. Y tiene cuatro problemas serios:
 4. **Gestiona el ciclo de vida de algo que no le corresponde.** ¿Cuándo se cierra
    ese repositorio? ¿Cuántas instancias hay si hay diez servicios?
 
-:::info[El nombre del problema]
+:::info
+[El nombre del problema]
 
 La clase depende de **quién** le da el servicio, no sólo de **qué** servicio
 necesita. Eso es acoplamiento a la implementación.
@@ -84,7 +85,8 @@ Los cuatro problemas desaparecen:
 3. La URL vive en `application.yml`, donde le corresponde.
 4. El contenedor gestiona el ciclo de vida.
 
-:::tip[Esto no es magia de Spring]
+:::tip
+[Esto no es magia de Spring]
 
 La inyección de dependencias es un patrón de diseño, no una característica de un
 framework. El segundo ejemplo funciona perfectamente sin Spring: basta con hacer
@@ -132,7 +134,8 @@ algún caso, añaden comportamiento.
 | `@Controller` / `@RestController` | presentación | Registra la clase para el enrutado HTTP de Spring MVC. |
 | `@Configuration` | configuración | La clase declara beans mediante métodos `@Bean`. |
 
-:::note[`@Repository` sí hace algo]
+:::note
+[`@Repository` sí hace algo]
 
 La traducción de excepciones no es cosmética: convierte una `SQLException`
 comprobada y específica de MariaDB en una `DataIntegrityViolationException` no
@@ -176,7 +179,7 @@ innecesario. Ventajas:
 ```java
 @Service
 public class ServicioResolucion {
-    @Autowired                                    // ❌
+    @Autowired                                    // NO!!!
     private RepositorioExpedientes expedientes;
 }
 ```
@@ -260,7 +263,8 @@ de negocio**. Es el objetivo del RA6.
 | `prototype` | Una instancia nueva en cada petición de inyección. |
 | `request`, `session` | Sólo en aplicaciones web: una por petición / por sesión. |
 
-:::danger[Los singletons se comparten entre hilos]
+:::danger
+[Los singletons se comparten entre hilos]
 
 Un `@Service` es, por defecto, un singleton: la **misma instancia** atiende
 peticiones concurrentes. Por tanto **no debe tener estado mutable**.
@@ -268,7 +272,7 @@ peticiones concurrentes. Por tanto **no debe tener estado mutable**.
 ```java
 @Service
 public class ServicioMal {
-    private Expediente actual;      // ❌ condición de carrera garantizada
+    private Expediente actual;      // NO!!! condición de carrera garantizada
     public void procesar(Expediente e) { this.actual = e; ... }
 }
 ```
@@ -308,7 +312,8 @@ public class VigilanteBuzon {
 }
 ```
 
-:::note[`@PostConstruct` frente al constructor]
+:::note
+[`@PostConstruct` frente al constructor]
 
 En el constructor las dependencias **aún no están** todas disponibles si hubiera
 inyección por campo, y hacer trabajo pesado ahí complica las pruebas. La regla:
@@ -440,7 +445,7 @@ respuesta correcta es **cero**.
 ## Ejemplo completo
 
 Así queda una vertical mínima, que es lo que construirás en la actividad
-[A0.4](/tema-0/h-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria).
+[A0.4](/tema-0/i-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria).
 
 ```java
 // domain/model/Expediente.java
@@ -508,6 +513,6 @@ class ServicioExpedientesTest {
 Fíjate en que la prueba es instantánea y no necesita Docker. **Eso** es lo que
 compra la inyección de dependencias.
 
-<NextPageButton to="/tema-0/g-flujo-git">
-Flujo de trabajo con Git
+<NextPageButton to="/tema-0/g-controlador-rest-validacion">
+Controladores REST y validación de entrada
 </NextPageButton>

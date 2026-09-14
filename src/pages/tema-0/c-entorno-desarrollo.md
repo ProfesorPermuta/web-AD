@@ -188,7 +188,7 @@ Sea cual sea el IDE, configura desde el primer día:
    tildes y con eñes; una codificación mal puesta genera errores que parecen de
    lógica y no lo son.
 2. **Finales de línea LF**. Si trabajas en Windows y el corrector en Linux, los
-   `CRLF` ensucian los diffs de Git. Ver el apartado de [Git](/tema-0/g-flujo-git).
+   `CRLF` ensucian los diffs de Git. Ver el apartado de [Git](/tema-0/h-flujo-git).
 3. **Formateo automático al guardar**, con el estilo por defecto del IDE. El
    objetivo no es el estilo concreto, es que no aparezcan cambios de formato
    mezclados con cambios de lógica en los commits.
@@ -218,7 +218,7 @@ git config --global init.defaultBranch main
 git config --global core.autocrlf input   # en Windows: true
 ```
 
-El flujo de trabajo completo se trata en el [apartado g](/tema-0/g-flujo-git).
+El flujo de trabajo completo se trata en el [apartado h](/tema-0/h-flujo-git).
 
 ## Clientes de base de datos
 
@@ -233,7 +233,7 @@ está pasando**. Los necesitarás a partir de la UD3.
 ## Checklist de arranque
 
 Esta es la comprobación de la actividad
-[A0.1](/tema-0/h-actividades#a01--instalación-y-verificación-del-entorno).
+[A0.1](/tema-0/i-actividades#a01--instalación-y-verificación-del-entorno).
 Ejecuta todo y guarda la salida.
 
 ```bash
