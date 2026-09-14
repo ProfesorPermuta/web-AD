@@ -108,7 +108,7 @@ de descargar las librerías, compilar, ejecutar las pruebas y empaquetar.
 
 ```bash
 # Windows
-winget install Apache.Maven
+choco install Apache.Maven
 
 # Debian/Ubuntu
 sudo apt install maven
