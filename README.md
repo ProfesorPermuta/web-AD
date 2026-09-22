@@ -2,7 +2,23 @@
 
 Apuntes del módulo 0486 (CS DAM), construidos con [Docusaurus](https://docusaurus.io/).
 
+## Requisitos previos
+
+Necesitas Node.js (que incluye npm) versión 20 o superior.
+
+- Descarga el instalador desde [nodejs.org](https://nodejs.org/) (versión LTS) y ejecútalo.
+- Alternativa en Windows con [Chocolatey](https://chocolatey.org/): `choco install nodejs-lts`.
+
+Comprueba la instalación:
+
+```bash
+node -v
+npm -v
+```
+
 ## Instalación
+
+Instala las dependencias del proyecto con npm:
 
 ```bash
 npm install
