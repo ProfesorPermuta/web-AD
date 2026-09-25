@@ -1,0 +1,938 @@
+<!doctype html>
+<title>UD1 · Gestión de ficheros y directorios</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #0a1410;
+  --surface: #0f1d17;
+  --surface-2: #142821;
+  --border: #1e3b2f;
+  --text: #eef6f1;
+  --text-dim: #9fbcac;
+  --text-faint: #6b8a79;
+  --accent: #34d399;
+  --accent-strong: #10b981;
+  --accent-deep: #065f46;
+  --amber: #f5c76e;
+  --rose: #e88b8b;
+  --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+}
+
+:root[data-theme="light"]{
+  --bg: #f4f8f5;
+  --surface: #ffffff;
+  --surface-2: #eaf3ec;
+  --border: #d3e5da;
+  --text: #0e1f17;
+  --text-dim: #3f5f4f;
+  --text-faint: #6f8f7c;
+  --accent: #0f9d6b;
+  --accent-strong: #0c8a5c;
+  --accent-deep: #d7f0e2;
+  --amber: #a5730a;
+  --rose: #b3423f;
+  --shadow: 0 20px 50px -25px rgba(15,60,40,0.25);
+}
+
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg: #f4f8f5;
+    --surface: #ffffff;
+    --surface-2: #eaf3ec;
+    --border: #d3e5da;
+    --text: #0e1f17;
+    --text-dim: #3f5f4f;
+    --text-faint: #6f8f7c;
+    --accent: #0f9d6b;
+    --accent-strong: #0c8a5c;
+    --accent-deep: #d7f0e2;
+    --amber: #a5730a;
+    --rose: #b3423f;
+    --shadow: 0 20px 50px -25px rgba(15,60,40,0.25);
+  }
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.deck{ position: relative; height: 100vh; width: 100vw; }
+
+.slide{
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 48px 68px 36px;
+  opacity: 0;
+  overflow: hidden;
+}
+.slide.active{ display: flex; opacity: 1; animation: rise .5s ease both; }
+@keyframes rise{ from{ opacity:0; transform: translateY(14px); } to{ opacity:1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce){ .slide.active{ animation: none; } }
+
+.kicker{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.kicker::before{
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+h1.big{
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(40px, 5.4vw, 76px);
+  line-height: 1.02;
+  margin: 0 0 20px;
+  text-wrap: balance;
+  color: var(--text);
+}
+h1.big em{ font-style: italic; color: var(--accent); }
+
+h2.title{
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 3.2vw, 46px);
+  line-height: 1.05;
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+h2.title em{ font-style: italic; color: var(--accent); }
+
+.subtitle{ font-size: 17px; color: var(--text-dim); max-width: 62ch; margin: 0 0 6px; }
+
+.content{ flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+
+.two-col{
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 40px;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 900px){ .two-col{ grid-template-columns: 1fr; } }
+
+.term{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+}
+.term-bar{
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.term-dot{ width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.term-dot:nth-child(1){ background: var(--rose); opacity:.7;}
+.term-dot:nth-child(2){ background: var(--amber); opacity:.7;}
+.term-dot:nth-child(3){ background: var(--accent); opacity:.7;}
+.term-label{ margin-left: 8px; font-size: 12px; color: var(--text-faint); }
+.term-body{ padding: 16px 20px; font-size: 14px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+.term-body .c{ color: var(--text-faint); }
+.term-body .g{ color: var(--accent); }
+.term-body .a{ color: var(--amber); }
+.term-body .rose{ color: var(--rose); }
+.term-body .prompt{ color: var(--accent-strong); font-weight: 600; }
+.cursor{ display:inline-block; width: 8px; height: 16px; background: var(--accent); margin-left: 2px; animation: blink 1.1s steps(1) infinite; vertical-align: -2px; }
+@keyframes blink{ 50%{ opacity: 0; } }
+
+ul.list{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+ul.list li{ display: flex; gap: 14px; align-items: flex-start; font-size: 17px; line-height: 1.4; }
+ul.list li .bul{ font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 15px; padding-top: 3px; flex-shrink: 0; }
+ul.list li b{ color: var(--text); }
+ul.list li span.d{ color: var(--text-dim); }
+
+.grid{ display: grid; gap: 18px; }
+.grid.cols-3{ grid-template-columns: repeat(3, 1fr); }
+.grid.cols-2{ grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px){ .grid.cols-3, .grid.cols-2{ grid-template-columns: 1fr; } }
+.card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card .num{ font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: .08em; }
+.card h3{ margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 23px; color: var(--text); }
+.card p{ margin: 0; color: var(--text-dim); font-size: 14px; line-height: 1.45; }
+
+table.tbl{ width: 100%; border-collapse: collapse; font-size: 15px; }
+table.tbl th{
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+table.tbl td{ padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+table.tbl td b, table.tbl td code{ color: var(--text); }
+table.tbl tr:last-child td{ border-bottom: none; }
+code{
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: .9em;
+  color: var(--accent);
+}
+
+.svg-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-card svg{ width: 100%; height: auto; display: block; }
+.svg-card .lbl{ font-family: 'JetBrains Mono', monospace; font-size: 13px; fill: var(--text-dim); }
+.svg-card .lbl-strong{ font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; fill: var(--text); }
+.svg-card .lane-label{ font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .04em; fill: var(--text-faint); }
+.svg-card .edge{ stroke: var(--text-faint); stroke-width: 2; fill: none; }
+.svg-card .edge-a{ stroke: var(--accent); stroke-width: 2.5; fill: none; }
+.svg-card .edge-b{ stroke: var(--amber); stroke-width: 2.5; fill: none; }
+.svg-card .commit{ fill: var(--surface); stroke: var(--text-faint); stroke-width: 2.5; }
+.svg-card .commit-a{ fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.svg-card .commit-b{ fill: var(--surface); stroke: var(--amber); stroke-width: 2.5; }
+.svg-card .commit-m{ fill: var(--amber); stroke: var(--amber); stroke-width: 2.5; }
+.svg-card .commit-ghost{ fill: none; stroke: var(--border); stroke-width: 2; stroke-dasharray: 3 4; }
+.svg-card .box{ fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; rx: 10; }
+.svg-card .box-accent{ fill: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); stroke: var(--accent); stroke-width: 1.5; rx: 10; }
+.svg-card .arrow{ stroke: var(--text-faint); stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+.svg-card .arrow-accent{ stroke: var(--accent); stroke-width: 2; fill: none; marker-end: url(#arrowhead-accent); }
+
+.badge{
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  width: fit-content;
+}
+.badge.warn{ color: var(--amber); background: color-mix(in oklab, var(--amber) 10%, transparent); }
+.badge.err{ color: var(--rose); background: color-mix(in oklab, var(--rose) 10%, transparent); }
+
+.foot-note{
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-faint);
+  border-left: 2px solid var(--accent-deep);
+  padding-left: 14px;
+}
+
+.deck-foot{
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-faint);
+  letter-spacing: .04em;
+}
+.progress{ flex: 1; height: 3px; background: var(--border); margin: 0 24px; border-radius: 2px; overflow: hidden; }
+.progress-bar{ height: 100%; background: var(--accent-strong); transition: width .35s ease; }
+
+.nav-btn{
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 20;
+  transition: color .15s, border-color .15s, transform .15s;
+  opacity: .55;
+}
+.nav-btn:hover{ opacity: 1; color: var(--accent); border-color: var(--accent); }
+.nav-btn.prev{ left: 18px; }
+.nav-btn.next{ right: 18px; }
+.nav-btn svg{ width: 18px; height: 18px; }
+
+.exnum{ font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+::selection{ background: color-mix(in oklab, var(--accent) 35%, transparent); }
+a{ color: var(--accent); }
+a:hover{ color: var(--accent-strong); }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1. PORTADA -->
+  <section class="slide active">
+    <div class="content" style="justify-content:center; align-items:flex-start;">
+      <div class="kicker">Acceso a Datos · UD1</div>
+      <h1 class="big">Ficheros y <em>directorios</em><br>con java.nio.file</h1>
+      <p class="subtitle">RA1 — antes de guardar datos en una base de datos, hay que saber manipular con soltura el sistema de ficheros del propio sistema operativo.</p>
+    </div>
+  </section>
+
+  <!-- 2. MAPA DEL TEMA -->
+  <section class="slide">
+    <div class="kicker">Mapa de la unidad</div>
+    <h2 class="title">Ocho apartados, <em>una API</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><div class="num">01</div><h3>Presentación</h3><p>Objetivos de la UD1 y por qué java.nio.file.</p></div>
+        <div class="card"><div class="num">02</div><h3>Path y Files</h3><p>Crear, borrar, copiar, mover, renombrar.</p></div>
+        <div class="card"><div class="num">03</div><h3>Recorrido de árboles</h3><p>Atributos y permisos.</p></div>
+        <div class="card"><div class="num">04</div><h3>WatchService</h3><p>Vigilancia de un directorio.</p></div>
+        <div class="card"><div class="num">05</div><h3>Secuencial / aleatorio</h3><p>Dos formas de acceder a un fichero.</p></div>
+        <div class="card"><div class="num">06</div><h3>Excepciones y config</h3><p>Jerarquía de dominio y rutas externalizadas.</p></div>
+        <div class="card"><div class="num">07</div><h3>Streaming binario</h3><p>Ficheros grandes por bloques.</p></div>
+        <div class="card"><div class="num">08</div><h3>Actividades</h3><p>A1.1 – A1.4, la entrega de la unidad.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. OBJETIVOS -->
+  <section class="slide">
+    <div class="kicker">01 · Presentación de la UD1</div>
+    <h2 class="title">Objetivos de la <em>unidad</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><h3>Manipular el sistema de ficheros</h3><p>Crear, borrar, copiar, mover y recorrer con <code>java.nio.file</code>.</p></div>
+        <div class="card"><h3>Discriminar formas de acceso</h3><p>Secuencial frente a aleatorio, y justificar cuál conviene.</p></div>
+        <div class="card"><h3>Diseñar excepciones propias</h3><p>Una jerarquía de dominio en vez de propagar excepciones genéricas.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">8 horas de la 1ª evaluación, evalúa RA1 — la unidad más pequeña, pero sienta una base que se reutiliza en todo el curso.</div>
+  </section>
+
+  <!-- 4. JAVA.IO VS JAVA.NIO.FILE -->
+  <section class="slide">
+    <div class="kicker">01 · Presentación de la UD1</div>
+    <h2 class="title">De <em>java.io</em> a <em>java.nio.file</em></h2>
+    <div class="two-col">
+      <table class="tbl">
+        <tr><th>Generación</th><th>Paquete</th><th>Año</th></tr>
+        <tr><td>Primera</td><td><code>java.io.File</code></td><td>1996</td></tr>
+        <tr><td><b>Segunda</b></td><td><code>java.nio.file</code></td><td><b>2011 (Java 7)</b></td></tr>
+      </table>
+      <div class="card">
+        <div class="badge err">Limitación de File</div>
+        <h3>Booleanos en vez de excepciones</h3>
+        <p><code>delete()</code>, <code>mkdir()</code>, <code>renameTo()</code> devuelven <code>false</code> sin decir por qué. No distingue "no existe" de "sin permiso".</p>
+      </div>
+    </div>
+    <div class="foot-note"><code>Path</code> (ruta), <code>Files</code> (operaciones estáticas) y <code>WatchService</code> (vigilancia sin polling) resuelven las tres carencias.</div>
+  </section>
+
+  <!-- 5. PATH: UNA RUTA, NO UN FICHERO -->
+  <section class="slide">
+    <div class="kicker">02 · Path, Paths y Files</div>
+    <h2 class="title"><em>Path</em>: una ruta, no un fichero</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">Path.java</span></div>
+        <div class="term-body"><span class="g">Path</span> ruta = Path.of(<span class="a">"datos"</span>, <span class="a">"entrada"</span>,
+    <span class="a">"registro.csv"</span>);
+
+ruta.getFileName();  <span class="c">// registro.csv</span>
+ruta.getParent();    <span class="c">// datos/entrada</span>
+ruta.isAbsolute();   <span class="c">// false</span><span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>Sin coste de E/S</b><span class="d"> hasta que se usa junto a <code>Files</code>.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>resolve()</code> compone rutas,</b><span class="d"> nunca concatenación manual con <code>+</code>.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>normalize()</code></b><span class="d"> limpia los <code>.</code> y <code>..</code> de una ruta.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. COMPROBAR Y CREAR -->
+  <section class="slide">
+    <div class="kicker">02 · Path, Paths y Files</div>
+    <h2 class="title">Comprobar y <em>crear</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">Files.java</span></div>
+        <div class="term-body">Files.exists(ruta);
+Files.isDirectory(ruta);
+
+<span class="c">// crea todos los niveles intermedios</span>
+Files.createDirectories(directorio);
+
+<span class="c">// lanza FileAlreadyExistsException</span>
+Files.createFile(fichero);<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">No es defensa contra carreras</div>
+        <h3><code>Files.exists()</code> puede engañar</h3>
+        <p>Devuelve <code>false</code> tanto si no existe como si no hay permisos. Entre comprobar y actuar, el fichero puede cambiar. Prefiere capturar la excepción de la operación real.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. LEER Y ESCRIBIR -->
+  <section class="slide">
+    <div class="kicker">02 · Path, Paths y Files</div>
+    <h2 class="title">Leer y <em>escribir</em> texto</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">Files.java</span></div>
+        <div class="term-body">Files.writeString(fichero, <span class="a">"línea\n"</span>,
+    UTF_8);
+
+Files.writeString(fichero, <span class="a">"más\n"</span>,
+    UTF_8, StandardOpenOption.<span class="g">APPEND</span>);
+
+String c = Files.readString(fichero, UTF_8);
+List&lt;String&gt; l = Files.readAllLines(fichero);<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge warn">Cuidado con el tamaño</div>
+        <h3>Cargan el fichero entero</h3>
+        <p><code>readString</code> y <code>readAllLines</code> son cómodos para configuración, pero no valen sobre ficheros grandes: para eso están los flujos por bloques.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. COPIAR MOVER BORRAR -->
+  <section class="slide">
+    <div class="kicker">02 · Path, Paths y Files</div>
+    <h2 class="title">Copiar, mover y <em>borrar</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box" x="10" y="40" width="150" height="50" rx="10"/>
+          <text x="85" y="70" text-anchor="middle" class="lbl-strong">Files.copy</text>
+          <path class="arrow" d="M160,65 H210"/>
+          <rect class="box-accent" x="210" y="40" width="150" height="50" rx="10"/>
+          <text x="285" y="70" text-anchor="middle" class="lbl-strong">Files.move</text>
+          <path class="arrow" d="M360,65 H410"/>
+          <rect class="box" x="410" y="40" width="150" height="50" rx="10"/>
+          <text x="485" y="65" text-anchor="middle" class="lbl-strong">Files.delete</text>
+          <text x="485" y="82" text-anchor="middle" class="lbl">solo si vacío</text>
+        </svg>
+      </div>
+      <div class="foot-note"><code>Files.move</code> también sirve para renombrar: un renombrado es, en esencia, un movimiento dentro del mismo padre. Para un árbol completo con contenido hay que recorrerlo primero.</div>
+    </div>
+  </section>
+
+  <!-- 9. EXCEPCIONES COMPROBADAS EN FILES -->
+  <section class="slide">
+    <div class="kicker">02 · Path, Paths y Files</div>
+    <h2 class="title">Excepciones, no <em>booleanos</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">try/catch</span></div>
+        <div class="term-body"><span class="g">try</span> {
+  Files.createDirectories(directorio);
+  Files.copy(origen, destino,
+      StandardCopyOption.<span class="a">REPLACE_EXISTING</span>);
+} <span class="g">catch</span> (IOException e) {
+  <span class="c">// decides: reintentar, propagar...</span>
+}<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b><code>IOException</code> y subclases</b><span class="d"> obligan a decidir en el momento de escribir el código.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>Files.copy</code> no crea directorios padre.</b><span class="d"> No es su responsabilidad.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. DIRECTORYSTREAM -->
+  <section class="slide">
+    <div class="kicker">03 · Recorrido de árboles</div>
+    <h2 class="title"><em>DirectoryStream</em>: un solo nivel</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">DirectoryStream.java</span></div>
+        <div class="term-body"><span class="g">try</span> (<span class="g">var</span> entradas =
+    Files.newDirectoryStream(directorio,
+        <span class="a">"*.csv"</span>)) {
+  <span class="g">for</span> (Path e : entradas) {
+    System.out.println(e.getFileName());
+  }
+}<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>Implementa <code>AutoCloseable</code>.</b><span class="d"> Siempre dentro de <code>try-with-resources</code>.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Filtro glob</b><span class="d"> directamente al abrir el stream.</span></div></li>
+        <li><span class="bul">▸</span><div><b>No baja a subdirectorios.</b><span class="d"> Solo el contenido directo.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11. FILES.WALK + PATHMATCHER -->
+  <section class="slide">
+    <div class="kicker">03 · Recorrido de árboles</div>
+    <h2 class="title"><em>Files.walk</em>: todo el árbol</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">Files.walk</span></div>
+        <div class="term-body"><span class="g">try</span> (Stream&lt;Path&gt; rutas = Files.walk(raiz)) {
+  rutas.filter(Files::isRegularFile)
+       .filter(soloLogs::matches)
+       .forEach(System.out::println);
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge warn">Recurso del sistema operativo</div>
+        <h3>Cierra siempre el Stream</h3>
+        <p><code>Files.walk</code> mantiene abierto un descriptor de directorio mientras se consume. Sin <code>try-with-resources</code> se acumulan sin liberar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. WALKFILETREE -->
+  <section class="slide">
+    <div class="kicker">03 · Recorrido de árboles</div>
+    <h2 class="title"><em>walkFileTree</em>: control fino</h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 680 140" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box-accent" x="10" y="45" width="150" height="50" rx="10"/>
+          <text x="85" y="72" text-anchor="middle" class="lbl-strong" style="font-size:11px">preVisitDirectory</text>
+          <path class="arrow" d="M160,70 H210"/>
+          <rect class="box" x="210" y="45" width="130" height="50" rx="10"/>
+          <text x="275" y="72" text-anchor="middle" class="lbl-strong" style="font-size:11px">visitFile</text>
+          <path class="arrow" d="M340,70 H390"/>
+          <rect class="box-accent" x="390" y="45" width="150" height="50" rx="10"/>
+          <text x="465" y="72" text-anchor="middle" class="lbl-strong" style="font-size:11px">postVisitDirectory</text>
+          <path class="arrow" d="M540,70 H590"/>
+          <rect class="box" x="590" y="45" width="80" height="50" rx="10"/>
+          <text x="630" y="65" text-anchor="middle" class="lbl-strong" style="font-size:10px">visitFile</text>
+          <text x="630" y="80" text-anchor="middle" class="lbl" style="font-size:10px">Failed</text>
+        </svg>
+      </div>
+      <div class="foot-note">Borrar un árbol completo: <code>visitFile</code> borra ficheros, <code>postVisitDirectory</code> borra el directorio ya vacío. <code>Files.walk</code> para solo lectura; <code>walkFileTree</code> cuando hay que actuar.</div>
+    </div>
+  </section>
+
+  <!-- 13. ATRIBUTOS Y PERMISOS -->
+  <section class="slide">
+    <div class="kicker">03 · Recorrido de árboles</div>
+    <h2 class="title">Atributos y <em>permisos POSIX</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">BasicFileAttributes</span></div>
+        <div class="term-body">BasicFileAttributes attrs =
+  Files.readAttributes(fichero,
+    BasicFileAttributes.<span class="g">class</span>);
+
+attrs.size();
+attrs.lastModifiedTime();
+attrs.isDirectory();<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">UnsupportedOperationException</div>
+        <h3>POSIX no existe en Windows</h3>
+        <p>Windows usa ACL, no <code>rwx</code> por propietario/grupo/otros. Comprueba antes con <code>supportedFileAttributeViews()</code> si el código debe ser portable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. WATCHSERVICE: PROBLEMA + REGISTRO -->
+  <section class="slide">
+    <div class="kicker">04 · WatchService</div>
+    <h2 class="title">Vigilar sin <em>polling</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">registro</span></div>
+        <div class="term-body"><span class="g">try</span> (WatchService watcher =
+    FileSystems.getDefault().newWatchService()) {
+  directorio.register(watcher,
+      <span class="a">ENTRY_CREATE</span>, <span class="a">ENTRY_MODIFY</span>, <span class="a">ENTRY_DELETE</span>);
+}<span class="cursor"></span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>Evento</th><th>Se dispara cuando...</th></tr>
+        <tr><td><code>ENTRY_CREATE</code></td><td>se crea una entrada nueva</td></tr>
+        <tr><td><code>ENTRY_MODIFY</code></td><td>se modifica el contenido</td></tr>
+        <tr><td><code>ENTRY_DELETE</code></td><td>se elimina una entrada</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 15. BUCLE DE ESPERA -->
+  <section class="slide">
+    <div class="kicker">04 · WatchService</div>
+    <h2 class="title">El <em>bucle</em> de espera</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">bucle</span></div>
+        <div class="term-body"><span class="g">while</span> (<span class="g">true</span>) {
+  WatchKey clave = watcher.take();
+  <span class="g">for</span> (WatchEvent&lt;?&gt; ev : clave.pollEvents()) {
+    <span class="c">// procesar ev.context()</span>
+  }
+  <span class="g">boolean</span> valida = clave.<span class="a">reset()</span>;
+  <span class="g">if</span> (!valida) <span class="g">break</span>;
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Falla en silencio</div>
+        <h3><code>reset()</code> es obligatorio</h3>
+        <p>Si se olvida, la clave deja de recibir eventos nuevos aunque el bucle siga ejecutándose, sin lanzar ninguna excepción.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16. TAKE VS POLL + SPRING -->
+  <section class="slide">
+    <div class="kicker">04 · WatchService</div>
+    <h2 class="title"><em>take()</em> frente a <em>poll()</em></h2>
+    <div class="content">
+      <div class="grid cols-2">
+        <div class="card"><h3><code>watcher.take()</code></h3><p>Bloquea indefinidamente hasta que hay eventos. Adecuado para un hilo dedicado en segundo plano.</p></div>
+        <div class="card"><h3><code>watcher.poll(t, unidad)</code></h3><p>Devuelve <code>null</code> si no hay eventos en ese tiempo. Útil si el hilo debe atender otras tareas.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">En Spring: un componente <code>Runnable</code> en un hilo gestionado, o <code>@PostConstruct</code>/<code>@PreDestroy</code> para abrir y cerrar el <code>WatchService</code> junto al contexto.</div>
+  </section>
+
+  <!-- 17. SECUENCIAL VS ALEATORIO -->
+  <section class="slide">
+    <div class="kicker">05 · Acceso secuencial y aleatorio</div>
+    <h2 class="title">Dos formas de <em>leer</em> un fichero</h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th></th><th>Secuencial</th><th>Aleatorio</th></tr>
+        <tr><td>Orden</td><td>De principio a fin</td><td>Cualquier posición</td></tr>
+        <tr><td>API</td><td><code>Files.readString</code>, <code>Stream&lt;String&gt;</code></td><td><code>RandomAccessFile</code>, <code>SeekableByteChannel</code></td></tr>
+        <tr><td>Coste de un dato</td><td>Proporcional a su posición</td><td>Constante</td></tr>
+        <tr><td>Caso de uso</td><td>Logs, informes, exportaciones</td><td>Registros de tamaño fijo, índices</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 18. RANDOMACCESSFILE -->
+  <section class="slide">
+    <div class="kicker">05 · Acceso secuencial y aleatorio</div>
+    <h2 class="title"><em>RandomAccessFile</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">registros.dat</span></div>
+        <div class="term-body"><span class="g">try</span> (<span class="g">var</span> raf = <span class="g">new</span> RandomAccessFile(
+    <span class="a">"registros.dat"</span>, <span class="a">"rw"</span>)) {
+  <span class="g">long</span> tam = 64;
+  raf.seek(3 * tam);  <span class="c">// registro 3</span>
+  <span class="g">byte</span>[] buffer = <span class="g">new</span> byte[(<span class="g">int</span>) tam];
+  raf.readFully(buffer);
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Corrompe si el tamaño no cuadra</div>
+        <h3>Escribir sobrescribe, no desplaza</h3>
+        <p>Solo funciona de forma práctica con registros de tamaño fijo, o con un índice aparte de desplazamientos.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19. SEEKABLEBYTECHANNEL -->
+  <section class="slide">
+    <div class="kicker">05 · Acceso secuencial y aleatorio</div>
+    <h2 class="title"><em>SeekableByteChannel</em>: la versión NIO.2</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">SeekableByteChannel</span></div>
+        <div class="term-body"><span class="g">try</span> (<span class="g">var</span> canal = Files.newByteChannel(
+    fichero, <span class="a">READ</span>, <span class="a">WRITE</span>)) {
+  canal.position(3 * 64);
+  ByteBuffer buf = ByteBuffer.allocate(64);
+  canal.read(buf);
+}<span class="cursor"></span></div>
+      </div>
+      <div class="foot-note">Se integra mejor con el resto de <code>java.nio</code> y es la opción preferible en código nuevo. <code>RandomAccessFile</code> sigue siendo válida en código existente.</div>
+    </div>
+  </section>
+
+  <!-- 20. COMPROBADAS VS NO COMPROBADAS -->
+  <section class="slide">
+    <div class="kicker">06 · Excepciones y configuración</div>
+    <h2 class="title">Comprobadas frente a <em>no comprobadas</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th></th><th>Comprobadas (checked)</th><th>No comprobadas (unchecked)</th></tr>
+        <tr><td>Superclase</td><td><code>Exception</code></td><td><code>RuntimeException</code></td></tr>
+        <tr><td>El compilador...</td><td>obliga a capturar o declarar</td><td>no obliga a nada</td></tr>
+        <tr><td>Ejemplo</td><td><code>IOException</code>, <code>NoSuchFileException</code></td><td><code>NullPointerException</code></td></tr>
+        <tr><td>Uso habitual</td><td>errores recuperables, externos</td><td>errores de programación</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 21. TRY-WITH-RESOURCES -->
+  <section class="slide">
+    <div class="kicker">06 · Excepciones y configuración</div>
+    <h2 class="title"><em>try-with-resources</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">varios recursos</span></div>
+        <div class="term-body"><span class="g">try</span> (<span class="g">var</span> entrada = Files.newByteChannel(origen);
+     <span class="g">var</span> salida = Files.newByteChannel(destino,
+         StandardOpenOption.<span class="a">WRITE</span>)) {
+  <span class="c">// se cierran en orden inverso</span>
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Propenso a errores</div>
+        <h3>El <code>finally</code> manual</h3>
+        <p>Olvidar el <code>finally</code>, no comprobar si el recurso se abrió, o perder la excepción original si <code>close()</code> también falla.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 22. JERARQUÍA DE EXCEPCIONES DE DOMINIO -->
+  <section class="slide">
+    <div class="kicker">06 · Excepciones y configuración</div>
+    <h2 class="title">Jerarquía de <em>dominio</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 620 140" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box-accent" x="230" y="15" width="180" height="45" rx="10"/>
+          <text x="320" y="42" text-anchor="middle" class="lbl-strong" style="font-size:12px">AlmacenamientoException</text>
+          <path class="arrow" d="M320,60 V80 Q320,95 250,95 H160"/>
+          <path class="arrow" d="M320,60 V80 Q320,95 400,95 H480"/>
+          <rect class="box" x="20" y="95" width="220" height="40" rx="8"/>
+          <text x="130" y="120" text-anchor="middle" class="lbl-strong" style="font-size:11px">RecursoNoEncontradoException</text>
+          <rect class="box" x="380" y="95" width="220" height="40" rx="8"/>
+          <text x="490" y="120" text-anchor="middle" class="lbl-strong" style="font-size:11px">PermisoDenegadoException</text>
+        </svg>
+      </div>
+      <div class="foot-note">Base no comprobada, con causa siempre conservada (<code>super(mensaje, causa)</code>). Evita fuga de detalles de infraestructura y permite reaccionar distinto según el caso.</div>
+    </div>
+  </section>
+
+  <!-- 23. RUTAS POR CONFIGURACIÓN -->
+  <section class="slide">
+    <div class="kicker">06 · Excepciones y configuración</div>
+    <h2 class="title">Rutas por <em>configuración</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">application.yml</span></div>
+        <div class="term-body"><span class="g">app:</span>
+  almacenamiento:
+    directorio-entrada: /var/datos/entrada
+    directorio-procesados: /var/datos/procesados
+    directorio-errores: /var/datos/errores<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b><code>@Value</code></b><span class="d"> para un valor suelto.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>@ConfigurationProperties</code></b><span class="d"> preferido con varias rutas relacionadas: valida al arrancar.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 24. STREAMING: EL PROBLEMA -->
+  <section class="slide">
+    <div class="kicker">07 · Streaming de binarios</div>
+    <h2 class="title">Cuando el fichero <em>no cabe</em> en memoria</h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><div class="badge err">Memoria completa</div><h3>Coste proporcional al tamaño</h3><p>Cada fichero procesado consume memoria igual a su tamaño completo.</p></div>
+        <div class="card"><div class="badge err">Muchas peticiones</div><h3>Se agota antes de saturar CPU</h3><p>Si el servidor atiende muchas a la vez, la memoria es el primer límite.</p></div>
+        <div class="card"><div class="badge err">OutOfMemoryError</div><h3>Sin forma razonable de recuperarse</h3><p>Si el fichero supera lo disponible en la JVM.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">La solución: tratar el fichero como un flujo de bytes que se procesa por partes, descartando cada bloque antes de pasar al siguiente.</div>
+  </section>
+
+  <!-- 25. INPUTSTREAM/OUTPUTSTREAM + BUFFER -->
+  <section class="slide">
+    <div class="kicker">07 · Streaming de binarios</div>
+    <h2 class="title">Copia por <em>bloques</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">streaming</span></div>
+        <div class="term-body"><span class="g">try</span> (InputStream in = Files.newInputStream(o);
+     OutputStream out = Files.newOutputStream(d)) {
+  <span class="g">byte</span>[] buffer = <span class="g">new</span> byte[8192];
+  <span class="g">int</span> leidos;
+  <span class="g">while</span> ((leidos = in.read(buffer)) != -1) {
+    out.write(buffer, 0, leidos);
+  }
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge">Coste constante</div>
+        <h3>La memoria es siempre la del buffer</h3>
+        <p>8 KB en el ejemplo, sin importar si el fichero pesa 1 MB o 10 GB. Un tamaño razonable: entre 4 KB y 64 KB.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 26. HASH + TRANSFERTO -->
+  <section class="slide">
+    <div class="kicker">07 · Streaming de binarios</div>
+    <h2 class="title">Procesar mientras se <em>transfiere</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">hash SHA-256</span></div>
+        <div class="term-body"><span class="g">while</span> ((leidos = in.read(buffer)) != -1) {
+  out.write(buffer, 0, leidos);
+  digest.update(buffer, 0, leidos);
+}
+<span class="c">// nunca hay copia completa en memoria</span><span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b><code>FileChannel.transferTo</code></b><span class="d"> delega la copia en el sistema operativo.</span></div></li>
+        <li><span class="bul">▸</span><div><b>No garantiza todo en una llamada:</b><span class="d"> hay que repetir hasta completar.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 27. MULTIPARTFILE EN SPRING -->
+  <section class="slide">
+    <div class="kicker">07 · Streaming de binarios</div>
+    <h2 class="title"><em>MultipartFile</em> en Spring</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">guardar()</span></div>
+        <div class="term-body"><span class="g">try</span> (InputStream in = fichero.getInputStream();
+     OutputStream out = Files.newOutputStream(destino)) {
+  <span class="c">// copia por bloques, igual que siempre</span>
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Exactamente el problema a evitar</div>
+        <h3><code>getBytes()</code> carga todo en memoria</h3>
+        <p>Para ficheros de tamaño no acotado, usa siempre <code>getInputStream()</code> y un bucle de copia por bloques.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 28. ACTIVIDADES -->
+  <section class="slide">
+    <div class="kicker">08 · Actividades de la UD1</div>
+    <h2 class="title">A1.1 – A1.4: <em>la entrega</em></h2>
+    <div class="content">
+      <ul class="list">
+        <li><span class="exnum">A1.1</span><div><b>AlmacenExpedientes</b><span class="d"> — archivado jerárquico por año/mes/provincia.</span></div></li>
+        <li><span class="exnum">A1.2</span><div><b>ServicioPurgaExpedientes</b><span class="d"> — purga por prescripción recorriendo el árbol.</span></div></li>
+        <li><span class="exnum">A1.3</span><div><b>VigilanteBuzonEntrada</b><span class="d"> — WatchService sobre las captaciones de radar.</span></div></li>
+        <li><span class="exnum">A1.4</span><div><b>MultagalException</b><span class="d"> — jerarquía de excepciones propia del dominio.</span></div></li>
+      </ul>
+    </div>
+    <div class="foot-note">8 horas, ENTREGA 1, evalúa RA1. Cada componente se expone a través de su controlador REST correspondiente.</div>
+  </section>
+
+  <!-- 29. ERRORES COMUNES -->
+  <section class="slide">
+    <div class="kicker">Repaso transversal</div>
+    <h2 class="title">Errores <em>frecuentes</em></h2>
+    <div class="content">
+      <div class="grid cols-2">
+        <div class="card"><div class="badge err">borrado silencioso</div><h3><code>Files.delete</code> sobre no vacío</h3><p>Falla si el directorio contiene algo. Hay que vaciarlo primero.</p></div>
+        <div class="card"><div class="badge err">vigilante roto en silencio</div><h3>Olvidar <code>clave.reset()</code></h3><p>Deja de recibir eventos sin lanzar ninguna excepción.</p></div>
+        <div class="card"><div class="badge err">corrupción de datos</div><h3>Escribir con tamaño distinto</h3><p>En acceso aleatorio, sobrescribe sin desplazar.</p></div>
+        <div class="card"><div class="badge err">OutOfMemoryError</div><h3><code>getBytes()</code> en un adjunto grande</h3><p>Usa siempre streaming por bloques.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 30. CIERRE -->
+  <section class="slide">
+    <div class="content" style="justify-content:center; align-items:flex-start;">
+      <div class="kicker">Fin de la UD1</div>
+      <h1 class="big">El disco es el <em>primer</em><br>almacén de datos</h1>
+      <p class="subtitle">Ficheros, árboles, vigilancia, excepciones propias y streaming — la base sobre la que se construirá JDBC en la UD2.</p>
+    </div>
+  </section>
+
+</div>
+
+<button class="nav-btn prev" id="prevBtn" aria-label="Anterior">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</button>
+<button class="nav-btn next" id="nextBtn" aria-label="Siguiente">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</button>
+
+<div style="position:fixed; bottom:0; left:0; right:0; padding: 0 68px 18px;">
+  <div class="deck-foot">
+    <span id="slideLabel">01 / 01</span>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <span>ACCESO A DATOS · UD1</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var idx = 0;
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+  function render(){
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === idx); });
+    document.getElementById('slideLabel').textContent = pad(idx+1) + ' / ' + pad(total);
+    document.getElementById('progressBar').style.width = ((idx+1)/total*100) + '%';
+  }
+
+  function go(delta){
+    idx = Math.max(0, Math.min(total - 1, idx + delta));
+    render();
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', function(){ go(1); });
+  document.getElementById('prevBtn').addEventListener('click', function(){ go(-1); });
+
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){ go(1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ go(-1); e.preventDefault(); }
+    else if (e.key === 'Home'){ idx = 0; render(); }
+    else if (e.key === 'End'){ idx = total - 1; render(); }
+  });
+
+  var touchStartX = null;
+  window.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; });
+  window.addEventListener('touchend', function(e){
+    if (touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50){ go(dx < 0 ? 1 : -1); }
+    touchStartX = null;
+  });
+
+  render();
+})();
+</script>

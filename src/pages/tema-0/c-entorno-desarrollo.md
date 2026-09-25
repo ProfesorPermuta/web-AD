@@ -130,7 +130,8 @@ Apache Maven 3.9.9
 Java version: 25, vendor: Eclipse Adoptium
 ```
 
-:::tip[El wrapper]
+:::tip
+[El wrapper]
 
 El proyecto que generarás incluye `mvnw` (Linux/macOS) y `mvnw.cmd` (Windows),
 el **Maven Wrapper**. Descarga y usa la versión exacta de Maven que el proyecto

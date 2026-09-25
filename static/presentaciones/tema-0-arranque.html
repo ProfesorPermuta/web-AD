@@ -1,0 +1,1435 @@
+<!doctype html>
+<title>UD0 · Arranque del proyecto</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg: #0a1410;
+  --surface: #0f1d17;
+  --surface-2: #142821;
+  --border: #1e3b2f;
+  --text: #eef6f1;
+  --text-dim: #9fbcac;
+  --text-faint: #6b8a79;
+  --accent: #34d399;
+  --accent-strong: #10b981;
+  --accent-deep: #065f46;
+  --amber: #f5c76e;
+  --rose: #e88b8b;
+  --shadow: 0 20px 60px -20px rgba(0,0,0,0.6);
+}
+
+:root[data-theme="light"]{
+  --bg: #f4f8f5;
+  --surface: #ffffff;
+  --surface-2: #eaf3ec;
+  --border: #d3e5da;
+  --text: #0e1f17;
+  --text-dim: #3f5f4f;
+  --text-faint: #6f8f7c;
+  --accent: #0f9d6b;
+  --accent-strong: #0c8a5c;
+  --accent-deep: #d7f0e2;
+  --amber: #a5730a;
+  --rose: #b3423f;
+  --shadow: 0 20px 50px -25px rgba(15,60,40,0.25);
+}
+
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg: #f4f8f5;
+    --surface: #ffffff;
+    --surface-2: #eaf3ec;
+    --border: #d3e5da;
+    --text: #0e1f17;
+    --text-dim: #3f5f4f;
+    --text-faint: #6f8f7c;
+    --accent: #0f9d6b;
+    --accent-strong: #0c8a5c;
+    --accent-deep: #d7f0e2;
+    --amber: #a5730a;
+    --rose: #b3423f;
+    --shadow: 0 20px 50px -25px rgba(15,60,40,0.25);
+  }
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.deck{ position: relative; height: 100vh; width: 100vw; }
+
+.slide{
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 48px 68px 36px;
+  opacity: 0;
+  overflow: hidden;
+}
+.slide.active{ display: flex; opacity: 1; animation: rise .5s ease both; }
+@keyframes rise{ from{ opacity:0; transform: translateY(14px); } to{ opacity:1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce){ .slide.active{ animation: none; } }
+
+.kicker{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.kicker::before{
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+
+h1.big{
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(40px, 5.4vw, 76px);
+  line-height: 1.02;
+  margin: 0 0 20px;
+  text-wrap: balance;
+  color: var(--text);
+}
+h1.big em{ font-style: italic; color: var(--accent); }
+
+h2.title{
+  font-family: 'Instrument Serif', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 3.2vw, 46px);
+  line-height: 1.05;
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+h2.title em{ font-style: italic; color: var(--accent); }
+
+.subtitle{ font-size: 17px; color: var(--text-dim); max-width: 62ch; margin: 0 0 6px; }
+
+.content{ flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0; }
+
+.two-col{
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 40px;
+  align-items: center;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 900px){ .two-col{ grid-template-columns: 1fr; } }
+
+.term{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+}
+.term-bar{
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.term-dot{ width: 10px; height: 10px; border-radius: 50%; background: var(--border); }
+.term-dot:nth-child(1){ background: var(--rose); opacity:.7;}
+.term-dot:nth-child(2){ background: var(--amber); opacity:.7;}
+.term-dot:nth-child(3){ background: var(--accent); opacity:.7;}
+.term-label{ margin-left: 8px; font-size: 12px; color: var(--text-faint); }
+.term-body{ padding: 16px 20px; font-size: 14px; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+.term-body .c{ color: var(--text-faint); }
+.term-body .g{ color: var(--accent); }
+.term-body .a{ color: var(--amber); }
+.term-body .rose{ color: var(--rose); }
+.term-body .prompt{ color: var(--accent-strong); font-weight: 600; }
+.cursor{ display:inline-block; width: 8px; height: 16px; background: var(--accent); margin-left: 2px; animation: blink 1.1s steps(1) infinite; vertical-align: -2px; }
+@keyframes blink{ 50%{ opacity: 0; } }
+
+ul.list{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+ul.list li{ display: flex; gap: 14px; align-items: flex-start; font-size: 17px; line-height: 1.4; }
+ul.list li .bul{ font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 15px; padding-top: 3px; flex-shrink: 0; }
+ul.list li b{ color: var(--text); }
+ul.list li span.d{ color: var(--text-dim); }
+
+.grid{ display: grid; gap: 18px; }
+.grid.cols-3{ grid-template-columns: repeat(3, 1fr); }
+.grid.cols-2{ grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px){ .grid.cols-3, .grid.cols-2{ grid-template-columns: 1fr; } }
+.card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card .num{ font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent); letter-spacing: .08em; }
+.card h3{ margin: 0; font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 23px; color: var(--text); }
+.card p{ margin: 0; color: var(--text-dim); font-size: 14px; line-height: 1.45; }
+
+table.tbl{ width: 100%; border-collapse: collapse; font-size: 15px; }
+table.tbl th{
+  text-align: left;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+table.tbl td{ padding: 11px 14px; border-bottom: 1px solid var(--border); color: var(--text-dim); }
+table.tbl td b, table.tbl td code{ color: var(--text); }
+table.tbl tr:last-child td{ border-bottom: none; }
+code{
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: .9em;
+  color: var(--accent);
+}
+
+.svg-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.svg-card svg{ width: 100%; height: auto; display: block; }
+.svg-card .lbl{ font-family: 'JetBrains Mono', monospace; font-size: 13px; fill: var(--text-dim); }
+.svg-card .lbl-strong{ font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; fill: var(--text); }
+.svg-card .lane-label{ font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .04em; fill: var(--text-faint); }
+.svg-card .edge{ stroke: var(--text-faint); stroke-width: 2; fill: none; }
+.svg-card .edge-a{ stroke: var(--accent); stroke-width: 2.5; fill: none; }
+.svg-card .edge-b{ stroke: var(--amber); stroke-width: 2.5; fill: none; }
+.svg-card .commit{ fill: var(--surface); stroke: var(--text-faint); stroke-width: 2.5; }
+.svg-card .commit-a{ fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+.svg-card .commit-b{ fill: var(--surface); stroke: var(--amber); stroke-width: 2.5; }
+.svg-card .commit-m{ fill: var(--amber); stroke: var(--amber); stroke-width: 2.5; }
+.svg-card .commit-ghost{ fill: none; stroke: var(--border); stroke-width: 2; stroke-dasharray: 3 4; }
+.svg-card .box{ fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; rx: 10; }
+.svg-card .box-accent{ fill: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); stroke: var(--accent); stroke-width: 1.5; rx: 10; }
+.svg-card .arrow{ stroke: var(--text-faint); stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+.svg-card .arrow-accent{ stroke: var(--accent); stroke-width: 2; fill: none; marker-end: url(#arrowhead-accent); }
+
+.badge{
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 10%, transparent);
+  width: fit-content;
+}
+.badge.warn{ color: var(--amber); background: color-mix(in oklab, var(--amber) 10%, transparent); }
+.badge.err{ color: var(--rose); background: color-mix(in oklab, var(--rose) 10%, transparent); }
+
+.foot-note{
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-faint);
+  border-left: 2px solid var(--accent-deep);
+  padding-left: 14px;
+}
+
+.deck-foot{
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-faint);
+  letter-spacing: .04em;
+}
+.progress{ flex: 1; height: 3px; background: var(--border); margin: 0 24px; border-radius: 2px; overflow: hidden; }
+.progress-bar{ height: 100%; background: var(--accent-strong); transition: width .35s ease; }
+
+.nav-btn{
+  position: fixed; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 20;
+  transition: color .15s, border-color .15s, transform .15s;
+  opacity: .55;
+}
+.nav-btn:hover{ opacity: 1; color: var(--accent); border-color: var(--accent); }
+.nav-btn.prev{ left: 18px; }
+.nav-btn.next{ right: 18px; }
+.nav-btn svg{ width: 18px; height: 18px; }
+
+.exnum{ font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+h3.sub{ font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 22px; margin: 0 0 10px; color: var(--text); }
+
+::selection{ background: color-mix(in oklab, var(--accent) 35%, transparent); }
+a{ color: var(--accent); }
+a:hover{ color: var(--accent-strong); }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1. PORTADA -->
+  <section class="slide active">
+    <div class="content" style="justify-content:center; align-items:flex-start;">
+      <div class="kicker">Acceso a Datos · UD0</div>
+      <h1 class="big">El <em>arranque</em><br>del proyecto MULTAGAL</h1>
+      <p class="subtitle">Entorno, Spring Boot, inyección de dependencias, REST y Git — la base sobre la que se construyen los seis RA del módulo.</p>
+    </div>
+  </section>
+
+  <!-- 2. MAPA DEL TEMA -->
+  <section class="slide">
+    <div class="kicker">Mapa de la unidad</div>
+    <h2 class="title">Diez apartados, <em>un solo hilo</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><div class="num">01</div><h3>El módulo</h3><p>Presentación, RA y criterios de calificación.</p></div>
+        <div class="card"><div class="num">02</div><h3>MULTAGAL</h3><p>Dominio, entidades y reglas de negocio.</p></div>
+        <div class="card"><div class="num">03</div><h3>Entorno</h3><p>JDK 25, Maven, IDE y Git.</p></div>
+        <div class="card"><div class="num">04</div><h3>Docker</h3><p>Contenedores para los servicios de datos.</p></div>
+        <div class="card"><div class="num">05</div><h3>Spring Boot</h3><p>Anatomía de un proyecto: pom, starters, YAML.</p></div>
+        <div class="card"><div class="num">06</div><h3>IoC y DI</h3><p>Inyección de dependencias y capas.</p></div>
+        <div class="card"><div class="num">07</div><h3>REST</h3><p>Controladores y validación de entrada.</p></div>
+        <div class="card"><div class="num">08</div><h3>Git</h3><p>Ramas, commits, etiquetas y PRs.</p></div>
+        <div class="card"><div class="num">09</div><h3>Actividades</h3><p>A0.1 – A0.6, la entrega de la unidad.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. EL MÓDULO: LA PREGUNTA -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Una pregunta, <em>seis</em> respuestas</h2>
+    <div class="content">
+      <p class="subtitle" style="font-size:19px; max-width:70ch;">El módulo 0486 — Acceso a Datos ocupa 80 horas de 2º de DAM. Todo responde a la misma pregunta: <b style="color:var(--text)">¿dónde y cómo guardo los datos para poder recuperarlos después?</b></p>
+      <div class="grid cols-3" style="margin-top:24px;">
+        <div class="card"><div class="num">RA1 · 15%</div><h3>Ficheros</h3><p><code>java.nio.file</code>, CSV, XML, JSON.</p></div>
+        <div class="card"><div class="num">RA2 · 20%</div><h3>JDBC</h3><p>Conectores y BD relacionales, <code>JdbcTemplate</code>.</p></div>
+        <div class="card"><div class="num">RA3 · 22%</div><h3>JPA / Hibernate</h3><p>Herramientas ORM.</p></div>
+        <div class="card"><div class="num">RA4 · 13%</div><h3>PostgreSQL</h3><p>BD objeto-relacionales, ObjectDB.</p></div>
+        <div class="card"><div class="num">RA5 · 15%</div><h3>MongoDB</h3><p>BD documentales nativas.</p></div>
+        <div class="card"><div class="num">RA6 · 15%</div><h3>Componentes</h3><p>Maven multimódulo, patrones. Transversal.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. PROYECTO ÚNICO -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Un único proyecto, <em>incremental</em></h2>
+    <div class="two-col">
+      <ul class="list">
+        <li><span class="bul">01</span><div><b>Es lo que pasa en la empresa.</b><span class="d"> No eliges el dominio, recibes requisitos.</span></div></li>
+        <li><span class="bul">02</span><div><b>Evaluación comparable.</b><span class="d"> Mismo enunciado para todos.</span></div></li>
+        <li><span class="bul">03</span><div><b>Eficiencia en el aula.</b><span class="d"> Una depuración colectiva sirve a todo el grupo.</span></div></li>
+        <li><span class="bul">04</span><div><b>Progresión visible.</b><span class="d"> Misma necesidad resuelta con ficheros, JDBC, JPA, PostgreSQL, MongoDB.</span></div></li>
+      </ul>
+      <div class="svg-card">
+        <svg viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box-accent" x="20" y="10" width="300" height="42" rx="10"/>
+          <text x="170" y="36" text-anchor="middle" class="lbl-strong">Ficheros (RA1)</text>
+          <path class="arrow" d="M170,52 V80"/>
+          <rect class="box" x="20" y="80" width="300" height="42" rx="10"/>
+          <text x="170" y="106" text-anchor="middle" class="lbl-strong">JDBC (RA2)</text>
+          <path class="arrow" d="M170,122 V150"/>
+          <rect class="box" x="20" y="150" width="300" height="42" rx="10"/>
+          <text x="170" y="176" text-anchor="middle" class="lbl-strong">JPA / Hibernate (RA3)</text>
+          <path class="arrow" d="M170,192 V220"/>
+          <rect class="box" x="20" y="220" width="300" height="30" rx="10"/>
+          <text x="170" y="240" text-anchor="middle" class="lbl">PostgreSQL · MongoDB (RA4-5)</text>
+        </svg>
+      </div>
+    </div>
+    <div class="foot-note">Principio rector: cada contenido se introduce cuando el proyecto lo demanda — primero se descubre la limitación, después llega la herramienta.</div>
+  </section>
+
+  <!-- 5. ANDAMIAJE + ERROR COMO CONTENIDO -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Andamiaje <em>decreciente</em></h2>
+    <div class="two-col">
+      <table class="tbl">
+        <tr><th>Evaluación</th><th>Qué se te entrega</th></tr>
+        <tr><td><b>1ª</b></td><td>Estructura del proyecto y buena parte del código guiado.</td></tr>
+        <tr><td><b>2ª</b></td><td>Sólo los requisitos y las pruebas que deben pasar.</td></tr>
+        <tr><td><b>3ª</b></td><td>Una especificación funcional; el diseño es tuyo.</td></tr>
+      </table>
+      <div class="card">
+        <div class="badge warn">Defectos deliberados</div>
+        <h3>El error como contenido</h3>
+        <p>Se introducen fugas de conexiones, problema N+1, inyección SQL y condiciones de carrera para que las diagnostiques. La depuración es una actividad programada, no un imprevisto.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. CALENDARIO Y CALIFICACIÓN -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Calendario de <em>entregas</em></h2>
+    <div class="two-col">
+      <table class="tbl">
+        <tr><th>Entrega</th><th>Unidades</th><th>RA</th></tr>
+        <tr><td><b>ENTREGA 1</b></td><td>UD0–UD3</td><td>RA1, RA2, RA6 parcial</td></tr>
+        <tr><td><b>ENTREGA 2</b></td><td>UD4–UD5</td><td>RA3, RA4, RA6 parcial</td></tr>
+        <tr><td><b>ENTREGA 3</b></td><td>UD6–UD7</td><td>RA5, RA6 completo</td></tr>
+        <tr><td><b>FINAL</b></td><td>Todas</td><td>Todos</td></tr>
+      </table>
+      <div class="card">
+        <div class="badge err">≥ 4,0 en cada RA</div>
+        <h3>Condiciones para aprobar</h3>
+        <p>Nota final = media ponderada de los seis RA. Un RA por debajo de 4,0 impide aprobar aunque la media dé. También ≥ 4,0 en la prueba práctica final. Se supera con ≥ 5,0.</p>
+      </div>
+    </div>
+    <div class="foot-note">Cada entrega se materializa con una etiqueta de Git en la fecha y hora límite. No se admiten modificaciones posteriores.</div>
+  </section>
+
+  <!-- 7. CONDICIONES FORMALES -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Condiciones <em>formales</em> del entregable</h2>
+    <div class="content">
+      <div class="grid cols-2">
+        <div class="card"><div class="badge err">0 en procedimentales</div><h3>No compila / no arranca</h3><p>Un entregable que no compile o no arranque se califica con 0 en los criterios procedimentales del hito.</p></div>
+        <div class="card"><div class="badge err">Penaliza</div><h3>Credenciales o rutas absolutas</h3><p>Ninguna credencial ni ruta absoluta escrita en el código fuente.</p></div>
+        <div class="card"><div class="badge err">Penaliza</div><h3>Concatenación en SQL</h3><p>Ninguna concatenación de parámetros en sentencias SQL.</p></div>
+        <div class="card"><div class="badge warn">Se exige</div><h3>Historial progresivo</h3><p>Cierre correcto de recursos y commits que evidencien trabajo progresivo, no una entrega única.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. DIARIO TÉCNICO + IA -->
+  <section class="slide">
+    <div class="kicker">01 · El módulo</div>
+    <h2 class="title">Diario técnico y <em>asistentes de IA</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">docs/adr/0003-jdbctemplate.md</span></div>
+        <div class="term-body"><span class="c"># ADR-003 — JdbcTemplate en lugar de JDBC puro</span>
+
+<span class="g">### Contexto</span>
+El CRUD con JDBC puro requiere 40 líneas/método.
+
+<span class="g">### Decisión</span>
+Usar JdbcTemplate con RowMapper propios.
+
+<span class="g">### Alternativas descartadas</span>
+- JDBC puro: control total, repetición insostenible.
+- JPA directo: oculta el SQL que aquí queremos ver.</div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>No se prohíbe la IA</b><span class="d"> en el trabajo autónomo, pero todo código debe poder explicarse.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Defensa oral y examen final</b><span class="d"> se hacen sin asistentes.</span></div></li>
+        <li><span class="bul">▸</span><div><b>El uso se declara</b><span class="d"> en el diario técnico.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Plagio o código no comprendido</b><span class="d"> = 0 en el hito.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9. MULTAGAL: POR QUÉ ESTE DOMINIO -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Sistema de gestión de <em>sanciones de tráfico</em></h2>
+    <div class="content">
+      <p class="subtitle" style="font-size:19px; max-width:74ch;">Durante todo el curso desarrollarás el subsistema de tramitación de expedientes sancionadores: captación, tramitación, notificación, alegaciones, resolución, pago y detracción de puntos.</p>
+      <div class="grid cols-3" style="margin-top:20px;">
+        <div class="card"><h3>Transacciones atómicas</h3><p>Detraer puntos y suspender el permiso a la vez.</p></div>
+        <div class="card"><h3>Estructura variable</h3><p>El atestado de cada denuncia no tiene forma fija.</p></div>
+        <div class="card"><h3>Geoespacial + binarios</h3><p>Radares, coordenadas y fotografías adjuntas.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. GLOSARIO -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Glosario <em>administrativo</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Término</th><th>Significado</th></tr>
+        <tr><td><b>Denuncia</b></td><td>Hecho presuntamente infractor constatado por agente o dispositivo.</td></tr>
+        <tr><td><b>Expediente</b></td><td>Procedimiento administrativo abierto a raíz de una denuncia.</td></tr>
+        <tr><td><b>Notificación / Alegación</b></td><td>Comunicación formal / oposición del interesado.</td></tr>
+        <tr><td><b>Resolución / Firmeza</b></td><td>Fin del expediente / ya no admite recurso ordinario.</td></tr>
+        <tr><td><b>Detracción de puntos</b></td><td>Descuento del saldo, sólo con resolución firme.</td></tr>
+        <tr><td><b>Prescripción</b></td><td>Extinción por transcurso del plazo sin actuación.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11. ENTIDADES Y RELACIONES -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Entidades y <em>relaciones</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box" x="10" y="20" width="130" height="46" rx="10"/>
+          <text x="75" y="48" text-anchor="middle" class="lbl-strong">Conductor</text>
+          <rect class="box" x="10" y="150" width="130" height="46" rx="10"/>
+          <text x="75" y="178" text-anchor="middle" class="lbl-strong">Vehículo</text>
+          <rect class="box-accent" x="190" y="85" width="150" height="46" rx="10"/>
+          <text x="265" y="113" text-anchor="middle" class="lbl-strong">Titularidad (N:M)</text>
+          <path class="arrow" d="M140,45 H190 Q190,45 190,85"/>
+          <path class="arrow" d="M140,173 H190 Q190,173 190,131"/>
+          <rect class="box" x="400" y="20" width="130" height="46" rx="10"/>
+          <text x="465" y="48" text-anchor="middle" class="lbl-strong">Radar</text>
+          <rect class="box" x="400" y="150" width="130" height="46" rx="10"/>
+          <text x="465" y="178" text-anchor="middle" class="lbl-strong">Infracción</text>
+          <rect class="box-accent" x="580" y="85" width="130" height="46" rx="10"/>
+          <text x="645" y="106" text-anchor="middle" class="lbl-strong">Denuncia</text>
+          <text x="645" y="122" text-anchor="middle" class="lbl">→ Expediente</text>
+          <path class="arrow" d="M530,45 H580 Q580,45 580,85"/>
+          <path class="arrow" d="M530,173 H580 Q580,173 580,131"/>
+        </svg>
+      </div>
+      <div class="foot-note"><code>Titularidad</code> es N:M con atributos temporales (alta/baja): necesita entidad propia, no <code>@ManyToMany</code>. <code>Conductor</code> puede ser nulo en <code>Denuncia</code> — un radar capta una matrícula, no una persona.</div>
+    </div>
+  </section>
+
+  <!-- 12. ESTADOS DEL EXPEDIENTE -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">El expediente: <em>máquina de estados</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box-accent" x="10" y="80" width="110" height="40" rx="10"/>
+          <text x="65" y="105" text-anchor="middle" class="lbl-strong">INICIADO</text>
+          <path class="arrow" d="M120,90 H190"/>
+          <rect class="box" x="190" y="60" width="120" height="40" rx="10"/>
+          <text x="250" y="85" text-anchor="middle" class="lbl-strong">NOTIFICADO</text>
+          <path class="arrow" d="M120,110 H190 Q190,150 240,150"/>
+          <rect class="box" x="240" y="130" width="120" height="40" rx="10"/>
+          <text x="300" y="155" text-anchor="middle" class="lbl-strong">PRESCRITO</text>
+          <path class="arrow" d="M310,80 H370"/>
+          <rect class="box" x="370" y="60" width="100" height="40" rx="10"/>
+          <text x="420" y="85" text-anchor="middle" class="lbl-strong">ALEGADO</text>
+          <path class="arrow" d="M470,80 H540"/>
+          <rect class="box" x="540" y="60" width="100" height="40" rx="10"/>
+          <text x="590" y="85" text-anchor="middle" class="lbl-strong">RESUELTO</text>
+          <path class="arrow" d="M640,80 H700"/>
+          <rect class="box-accent" x="700" y="20" width="55" height="35" rx="8"/>
+          <text x="727" y="42" text-anchor="middle" class="lbl-strong" style="font-size:11px">FIRME</text>
+          <path class="arrow" d="M590,100 V150"/>
+          <rect class="box" x="540" y="150" width="100" height="35" rx="8"/>
+          <text x="590" y="172" text-anchor="middle" class="lbl-strong" style="font-size:11px">SOBRESEÍDO</text>
+        </svg>
+      </div>
+      <div class="foot-note">Casi todas las reglas de negocio son, en realidad, restricciones sobre las transiciones válidas de este diagrama.</div>
+    </div>
+  </section>
+
+  <!-- 13. REGLAS DE NEGOCIO R1-R3 -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Reglas de negocio <em>(I)</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><div class="num">R1</div><h3>Pronto pago</h3><p>Bonificación del 50% si se paga en 20 días naturales tras la notificación, con renuncia a alegar.</p></div>
+        <div class="card"><div class="num">R2</div><h3>Firmeza</h3><p>La detracción de puntos sólo se materializa con resolución firme.</p></div>
+        <div class="card"><div class="num">R3</div><h3 style="color:var(--rose)">Saldo cero</h3><p><b style="color:var(--rose)">El caso transaccional del curso.</b> Actualizar el saldo y suspender el permiso deben ser atómicos.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">R3 se reimplementa en JDBC, luego en JPA y se compara después: la misma operación resuelta con tecnologías distintas.</div>
+  </section>
+
+  <!-- 14. REGLAS DE NEGOCIO R4-R6 -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Reglas de negocio <em>(II)</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><div class="num">R4</div><h3>Prescripción</h3><p>3 meses (leves) o 6 (graves/muy graves) sin notificar.</p></div>
+        <div class="card"><div class="num">R5</div><h3>Alegaciones pendientes</h3><p>No se resuelve un expediente con alegaciones pendientes de contestar.</p></div>
+        <div class="card"><div class="num">R6</div><h3>Identificar al conductor</h3><p>Obligatorio para el titular; su omisión genera otra infracción autónoma muy grave.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15. TIPOS DEL DOMINIO -->
+  <section class="slide">
+    <div class="kicker">02 · MULTAGAL</div>
+    <h2 class="title">Primer <em>esbozo</em> del modelo</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">Infraccion.java</span></div>
+        <div class="term-body"><span class="c">public record</span> Coordenadas(<span class="g">double</span> latitud, <span class="g">double</span> longitud) { }
+
+<span class="c">public enum</span> Gravedad { LEVE, GRAVE, MUY_GRAVE }
+
+<span class="c">public record</span> Infraccion(
+    String codigo,
+    String articulo,
+    String descripcion,
+    <span class="a">BigDecimal</span> importeBase,
+    <span class="g">int</span> puntos,
+    Gravedad gravedad) { }</div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b><code>BigDecimal</code>, nunca <code>double</code>.</b><span class="d"> Los importes son dinero; <code>double</code> no representa exactamente los decimales.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>LocalDate</code> / <code>LocalDateTime</code>.</b><span class="d"> Nunca <code>java.util.Date</code>.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Decisiones que se vuelven caras</b><span class="d"> cuando haya que mapearlas a columnas más adelante.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 16. LA PILA DEL MÓDULO -->
+  <section class="slide">
+    <div class="kicker">03 · Entorno de desarrollo</div>
+    <h2 class="title">La <em>pila</em> del módulo</h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Categoría</th><th>Herramienta</th><th>Versión</th></tr>
+        <tr><td>JDK</td><td>OpenJDK / Temurin</td><td><b>25 (LTS)</b></td></tr>
+        <tr><td>Construcción</td><td>Apache Maven</td><td>3.9+</td></tr>
+        <tr><td>IDE</td><td>IntelliJ IDEA / VS Code</td><td>actual</td></tr>
+        <tr><td>Control de versiones</td><td>Git</td><td>2.40+</td></tr>
+        <tr><td>Contenedores</td><td>Docker + Compose</td><td>actual</td></tr>
+        <tr><td>Cliente SQL</td><td>DBeaver</td><td>actual</td></tr>
+        <tr><td>Cliente MongoDB</td><td>MongoDB Compass</td><td>actual</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 17. JDK Y MAVEN -->
+  <section class="slide">
+    <div class="kicker">03 · Entorno de desarrollo</div>
+    <h2 class="title">JDK 25 y <em>Maven</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">verificación</span></div>
+        <div class="term-body"><span class="prompt">$</span> java -version
+openjdk version <span class="a">"25"</span> 2025-09-16 LTS
+
+<span class="prompt">$</span> mvn -version
+Apache Maven 3.9.9
+Java version: 25, vendor: Eclipse Adoptium<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>25 es LTS.</b><span class="d"> Soporte de años; no instales la última no-LTS.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>JAVA_HOME</code> importa.</b><span class="d"> Maven no mira el <code>PATH</code>, mira esa variable.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Usa <code>./mvnw</code>,</b><span class="d"> nunca <code>mvn</code> a secas: garantiza la misma versión en cualquier máquina.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 18. CONFIGURACIÓN COMÚN DEL IDE -->
+  <section class="slide">
+    <div class="kicker">03 · Entorno de desarrollo</div>
+    <h2 class="title">Configuración <em>mínima</em> del IDE</h2>
+    <div class="content">
+      <div class="grid cols-2">
+        <div class="card"><h3>UTF-8</h3><p>Vas a leer CSV y XML con tildes y eñes; una codificación mal puesta genera errores que parecen de lógica.</p></div>
+        <div class="card"><h3>Finales de línea LF</h3><p>Si el grupo mezcla Windows/Linux, los CRLF ensucian los diffs de Git.</p></div>
+        <div class="card"><h3>Formateo al guardar</h3><p>Para que no aparezcan cambios de formato mezclados con cambios de lógica.</p></div>
+        <div class="card"><h3>Nivel de lenguaje 25</h3><p>Aunque el <code>pom.xml</code> lo declare, el IDE mantiene su propia configuración.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 19. CONTENEDOR VS VM -->
+  <section class="slide">
+    <div class="kicker">04 · Docker y servicios de datos</div>
+    <h2 class="title">Contenedor <em>≠</em> máquina virtual</h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 640 180" xmlns="http://www.w3.org/2000/svg">
+          <rect class="box" x="20" y="20" width="270" height="140" rx="10"/>
+          <text x="155" y="45" text-anchor="middle" class="lbl-strong">Máquina virtual</text>
+          <rect class="box" x="40" y="60" width="230" height="30" rx="6"/>
+          <text x="155" y="80" text-anchor="middle" class="lbl">SO invitado completo</text>
+          <rect class="box" x="40" y="98" width="230" height="26" rx="6"/>
+          <text x="155" y="116" text-anchor="middle" class="lbl">Hipervisor</text>
+          <text x="155" y="150" text-anchor="middle" class="lbl" style="fill:var(--rose)">GB · minutos</text>
+
+          <rect class="box-accent" x="350" y="20" width="270" height="140" rx="10"/>
+          <text x="485" y="45" text-anchor="middle" class="lbl-strong">Contenedor</text>
+          <rect class="box" x="370" y="60" width="230" height="26" rx="6"/>
+          <text x="485" y="78" text-anchor="middle" class="lbl">Proceso + dependencias</text>
+          <rect class="box" x="370" y="96" width="230" height="26" rx="6"/>
+          <text x="485" y="114" text-anchor="middle" class="lbl">Núcleo del anfitrión (compartido)</text>
+          <text x="485" y="150" text-anchor="middle" class="lbl" style="fill:var(--accent)">MB · segundos</text>
+        </svg>
+      </div>
+      <div class="foot-note">Por eso puedes tener MariaDB, PostgreSQL y MongoDB arrancados a la vez en un portátil sin que se note.</div>
+    </div>
+  </section>
+
+  <!-- 20. VOCABULARIO DOCKER -->
+  <section class="slide">
+    <div class="kicker">04 · Docker y servicios de datos</div>
+    <h2 class="title">Vocabulario <em>mínimo</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Término</th><th>Qué es</th></tr>
+        <tr><td><b>Imagen</b></td><td>Plantilla de sólo lectura. <code>postgres:16</code> es una imagen.</td></tr>
+        <tr><td><b>Contenedor</b></td><td>Instancia en ejecución de una imagen.</td></tr>
+        <tr><td><b>Volumen</b></td><td><b style="color:var(--rose)">Sobrevive</b> a la destrucción del contenedor. Aquí viven los datos.</td></tr>
+        <tr><td><b>Red</b></td><td>Conecta contenedores entre sí por nombre.</td></tr>
+        <tr><td><b>Compose</b></td><td>Define varios servicios en un único YAML.</td></tr>
+      </table>
+      <div class="foot-note">Sin volumen no hay datos: cada <code>docker compose down -v</code> borra tu base de datos entera. Es el error número uno de quien empieza.</div>
+    </div>
+  </section>
+
+  <!-- 21. COMPOSE.YAML -->
+  <section class="slide">
+    <div class="kicker">04 · Docker y servicios de datos</div>
+    <h2 class="title">Los tres servicios de <em>datos</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">compose.yaml</span></div>
+        <div class="term-body"><span class="g">services:</span>
+  mariadb:
+    image: mariadb:11
+    <span class="c"># UD3: relacional</span>
+  postgres:
+    image: postgis/postgis:16-3.4
+    <span class="c"># UD5: geoespacial</span>
+  mongo:
+    image: mongo:7
+    <span class="c"># UD6: documental</span>
+
+<span class="g">volumes:</span>
+  mariadb-data: {}
+  postgres-data: {}
+  mongo-data: {}<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>Versión fija,</b><span class="d"> nunca <code>latest</code>: reproducibilidad.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Puertos</b><span class="d"> = anfitrión:contenedor.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>healthcheck</code></b><span class="d"> comprueba que el servicio responde de verdad.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 22. .ENV Y CREDENCIALES -->
+  <section class="slide">
+    <div class="kicker">04 · Docker y servicios de datos</div>
+    <h2 class="title">Credenciales: el fichero <em>.env</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">.gitignore</span></div>
+        <div class="term-body"><span class="rose">.env</span>          <span class="c"># NO se sube</span>
+.env.example  <span class="g"># SÍ se sube (relleno)</span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Criterio de evaluación</div>
+        <h3>Ni una contraseña en el código</h3>
+        <p>El <code>compose.yaml</code> usa <code>${VARIABLE}</code>, que Compose lee de <code>.env</code>. Borrar una credencial en un commit posterior <b>no la elimina del historial</b>: sigue ahí para siempre.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 23. SPRING INITIALIZR + ESTRUCTURA -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">Spring Boot desde el <em>primer día</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><h3>Empleabilidad</h3><p>La persistencia se hace con Spring de forma abrumadoramente mayoritaria en el sector.</p></div>
+        <div class="card"><h3>Vocabulario base</h3><p>DI y patrón repositorio como lenguaje común del módulo, no un añadido final.</p></div>
+        <div class="card"><h3>No oculta el currículo</h3><p>Trabajarás <code>JdbcTemplate</code>, Hibernate y <code>MongoTemplate</code> sabiendo qué hacen por debajo.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">Exigencia explícita: se te pedirá conocer y justificar qué hace el framework por debajo. Se comprueba en la defensa oral.</div>
+  </section>
+
+  <!-- 24. ESTRUCTURA DE DIRECTORIOS -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">Estructura de <em>directorios</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">multagal/</span></div>
+        <div class="term-body">.mvn/wrapper/     <span class="c"># ¡no ignorar!</span>
+mvnw  mvnw.cmd
+pom.xml
+compose.yaml
+.env  .env.example
+docs/adr/         <span class="g"># diario técnico</span>
+src/main/java/es/edu/multagal/
+    MultagalApplication.java
+src/main/resources/
+    application.yml
+    application-dev.yml
+    application-prod.yml<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge warn">Confusión clásica</div>
+        <h3><code>src/main/resources</code></h3>
+        <p>Se empaqueta dentro del JAR. No es un directorio del sistema de ficheros en tiempo de ejecución: leerlo requiere <code>ClassPathResource</code>, no <code>new File(...)</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 25. POM.XML Y STARTERS -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">El <em>pom.xml</em> y los starters</h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Starter</th><th>Unidad</th><th>Qué aporta</th></tr>
+        <tr><td><code>spring-boot-starter-web</code></td><td>UD0</td><td>Spring MVC + Tomcat embebido</td></tr>
+        <tr><td><code>spring-boot-starter-jdbc</code></td><td>UD3</td><td><code>DataSource</code>, <code>JdbcTemplate</code>, HikariCP</td></tr>
+        <tr><td><code>spring-boot-starter-data-jpa</code></td><td>UD4</td><td>Hibernate + repositorios JPA</td></tr>
+        <tr><td><code>spring-boot-starter-data-mongodb</code></td><td>UD6</td><td>Driver MongoDB + <code>MongoTemplate</code></td></tr>
+      </table>
+      <div class="foot-note">Las dependencias no llevan <code>&lt;version&gt;</code>: el <code>spring-boot-starter-parent</code> resuelve versiones compatibles entre sí. Un starter no es código: es una dependencia agregadora más autoconfiguración.</div>
+    </div>
+  </section>
+
+  <!-- 26. @SPRINGBOOTAPPLICATION -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">Diez líneas que hacen <em>mucho</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">MultagalApplication.java</span></div>
+        <div class="term-body"><span class="g">@SpringBootApplication</span>
+<span class="c">public class</span> MultagalApplication {
+    <span class="g">public static void</span> main(String[] args) {
+        SpringApplication.run(
+            MultagalApplication.class, args);
+    }
+}<span class="cursor"></span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>Anotación incluida</th><th>Qué hace</th></tr>
+        <tr><td><code>@SpringBootConfiguration</code></td><td>Fuente de definiciones de beans.</td></tr>
+        <tr><td><code>@ComponentScan</code></td><td>Escanea este paquete y subpaquetes.</td></tr>
+        <tr><td><code>@EnableAutoConfiguration</code></td><td>Configura según el classpath.</td></tr>
+      </table>
+    </div>
+    <div class="foot-note"><code>@ComponentScan</code> escanea hacia abajo desde el paquete raíz. Un bean fuera de él produce <code>NoSuchBeanDefinitionException</code> sin mencionar el motivo.</div>
+  </section>
+
+  <!-- 27. APPLICATION.YML Y PERFILES -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">Perfiles: <em>dev</em> y <em>prod</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">application-prod.yml</span></div>
+        <div class="term-body"><span class="g">spring:</span>
+  datasource:
+    url: jdbc:mariadb://localhost:3306/multagal
+    username: <span class="a">${MARIADB_USER}</span>
+    password: <span class="a">${MARIADB_PASSWORD}</span><span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b>Mismo código,</b><span class="d"> distinta base según el perfil activo.</span></div></li>
+        <li><span class="bul">▸</span><div><b><code>${VAR}</code></b><span class="d"> se resuelve contra variables de entorno: las credenciales nunca están en el repositorio.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 28. ORDEN DE PRECEDENCIA -->
+  <section class="slide">
+    <div class="kicker">05 · Anatomía de Spring Boot</div>
+    <h2 class="title">Orden de <em>precedencia</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box-accent" x="20" y="10" width="600" height="32" rx="8"/>
+          <text x="320" y="31" text-anchor="middle" class="lbl-strong">1. Argumentos de línea de comandos</text>
+          <path class="arrow" d="M320,42 V52"/>
+          <rect class="box" x="20" y="52" width="600" height="32" rx="8"/>
+          <text x="320" y="73" text-anchor="middle" class="lbl-strong">2. Variables de entorno</text>
+          <path class="arrow" d="M320,84 V94"/>
+          <rect class="box" x="20" y="94" width="600" height="32" rx="8"/>
+          <text x="320" y="115" text-anchor="middle" class="lbl-strong">3. application-{perfil}.yml</text>
+          <path class="arrow" d="M320,126 V136"/>
+          <rect class="box" x="20" y="136" width="600" height="32" rx="8"/>
+          <text x="320" y="157" text-anchor="middle" class="lbl-strong">4. application.yml</text>
+          <path class="arrow" d="M320,168 V178"/>
+          <rect class="box" x="20" y="178" width="600" height="32" rx="8"/>
+          <text x="320" y="199" text-anchor="middle" class="lbl-strong">5. Valores por defecto en el código</text>
+        </svg>
+      </div>
+      <div class="foot-note"><code>spring.datasource.username</code> equivale a <code>SPRING_DATASOURCE_USERNAME</code> — relaxed binding.</div>
+    </div>
+  </section>
+
+  <!-- 29. EL PROBLEMA: ACOPLAMIENTO -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">El problema: <em>acoplamiento</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">código que NO escribiremos</span></div>
+        <div class="term-body"><span class="c">public class</span> ServicioExpedientes {
+  <span class="rose">private final</span> RepositorioExpedientesJdbc repo =
+    <span class="rose">new</span> RepositorioExpedientesJdbc(
+      <span class="a">"jdbc:mariadb://localhost:3306/multagal"</span>);
+}</div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">✗</span><div><b>Atado a JDBC.</b><span class="d"> Migrar a JPA obliga a editar esta clase.</span></div></li>
+        <li><span class="bul">✗</span><div><b>No se puede probar</b><span class="d"> sin una MariaDB arrancada.</span></div></li>
+        <li><span class="bul">✗</span><div><b>Configuración dentro del código.</b><span class="d"> Viola la condición formal.</span></div></li>
+        <li><span class="bul">✗</span><div><b>Gestiona un ciclo de vida</b><span class="d"> que no le corresponde.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 30. LA SOLUCIÓN: IOC -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">La solución: <em>invertir el control</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">ServicioExpedientes.java</span></div>
+        <div class="term-body"><span class="g">@Service</span>
+<span class="c">public class</span> ServicioExpedientes {
+  <span class="a">private final</span> RepositorioExpedientes repo;  <span class="c">// interfaz</span>
+
+  <span class="c">public</span> ServicioExpedientes(
+      RepositorioExpedientes repo) {
+    <span class="g">this</span>.repo = repo;
+  }
+}<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">✓</span><div><b>Depende de la interfaz.</b><span class="d"> Cambiar de tecnología no toca esta clase.</span></div></li>
+        <li><span class="bul">✓</span><div><b>Se puede probar</b><span class="d"> con un mock, sin base de datos.</span></div></li>
+        <li><span class="bul">✓</span><div><b>La URL vive en <code>application.yml</code>.</b></div></li>
+      </ul>
+    </div>
+    <div class="foot-note">DI es un patrón de diseño, no magia de Spring: funciona igual con un simple <code>new ServicioExpedientes(new RepositorioJdbc(...))</code>. Spring sólo automatiza el cableado.</div>
+  </section>
+
+  <!-- 31. CICLO DE ARRANQUE DEL CONTEXTO -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">El contenedor y los <em>beans</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead-accent" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+          <rect class="box" x="10" y="35" width="130" height="50" rx="10"/>
+          <text x="75" y="65" text-anchor="middle" class="lbl-strong">@ComponentScan</text>
+          <path class="arrow-accent" d="M140,60 H180"/>
+          <rect class="box" x="180" y="35" width="130" height="50" rx="10"/>
+          <text x="245" y="65" text-anchor="middle" class="lbl-strong">Definiciones</text>
+          <path class="arrow-accent" d="M310,60 H350"/>
+          <rect class="box" x="350" y="35" width="150" height="50" rx="10"/>
+          <text x="425" y="65" text-anchor="middle" class="lbl-strong">Resolución del grafo</text>
+          <path class="arrow-accent" d="M500,60 H540"/>
+          <rect class="box-accent" x="540" y="35" width="170" height="50" rx="10"/>
+          <text x="625" y="65" text-anchor="middle" class="lbl-strong">ApplicationContext</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 32. LOS ESTEREOTIPOS -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Los <em>estereotipos</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Anotación</th><th>Capa</th><th>Qué añade</th></tr>
+        <tr><td><code>@Component</code></td><td>genérica</td><td>Nada.</td></tr>
+        <tr><td><code>@Service</code></td><td>negocio</td><td>Marca la lógica de negocio.</td></tr>
+        <tr><td><code>@Repository</code></td><td>persistencia</td><td><b>Traduce excepciones</b> a <code>DataAccessException</code>.</td></tr>
+        <tr><td><code>@RestController</code></td><td>presentación</td><td>Enrutado HTTP de Spring MVC.</td></tr>
+        <tr><td><code>@Configuration</code></td><td>configuración</td><td>Declara beans con <code>@Bean</code>.</td></tr>
+      </table>
+      <div class="foot-note">La traducción de <code>@Repository</code> no es cosmética: convierte una <code>SQLException</code> comprobada en una excepción no comprobada independiente del proveedor.</div>
+    </div>
+  </section>
+
+  <!-- 33. INYECCIÓN POR CONSTRUCTOR VS CAMPO -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Por constructor, <em>nunca</em> por campo</h2>
+    <div class="two-col">
+      <div class="card">
+        <div class="badge">Correcta</div>
+        <h3>Por constructor</h3>
+        <p>Campos <code>final</code>, inmutable y seguro entre hilos. Imposible construir sin dependencias. Se instancia en test sin contenedor.</p>
+      </div>
+      <div class="card">
+        <div class="badge err">Prohibida en el módulo</div>
+        <h3><code>@Autowired</code> en campo</h3>
+        <p>No puede ser <code>final</code>, oculta dependencias, y en un test unitario puro el campo queda a <code>null</code>.</p>
+      </div>
+    </div>
+    <div class="foot-note">Con Lombok: <code>@RequiredArgsConstructor</code> genera el constructor con los campos <code>final</code> — equivalente, siempre que sepas explicar qué genera.</div>
+  </section>
+
+  <!-- 34. VARIAS IMPLEMENTACIONES -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Cuando hay <em>varias implementaciones</em></h2>
+    <div class="content">
+      <div class="grid cols-3">
+        <div class="card"><h3><code>@Primary</code></h3><p>Una implementación es la predeterminada entre varias candidatas.</p></div>
+        <div class="card"><h3><code>@Qualifier</code></h3><p>Se elige explícitamente en el punto de inyección.</p></div>
+        <div class="card"><div class="badge">La interesante</div><h3><code>@ConditionalOnProperty</code></h3><p>Se elige por configuración, editando una línea de <code>application.yml</code>, sin recompilar.</p></div>
+      </div>
+    </div>
+    <div class="foot-note">Con ambos repositorios registrados sin resolver la ambigüedad: <code>NoUniqueBeanDefinitionException: expected single matching bean but found 2</code>.</div>
+  </section>
+
+  <!-- 35. SINGLETON Y ESTADO MUTABLE -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Singletons <em>sin estado mutable</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">ServicioMal.java</span></div>
+        <div class="term-body"><span class="g">@Service</span>
+<span class="c">public class</span> ServicioMal {
+  <span class="rose">private</span> Expediente actual;  <span class="rose">// NO!!!</span>
+  <span class="c">public void</span> procesar(Expediente e) {
+    <span class="g">this</span>.actual = e;  <span class="rose">// carrera</span>
+  }
+}</div>
+      </div>
+      <div class="card">
+        <div class="badge err">Condición de carrera garantizada</div>
+        <h3>Un <code>@Service</code> es singleton</h3>
+        <p>La misma instancia atiende peticiones concurrentes. Sus campos deben ser <code>final</code> y contener sólo dependencias o configuración inmutable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 36. CICLO DE VIDA -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Ciclo de <em>vida</em> de un bean</h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 720 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--text-faint)"/>
+            </marker>
+          </defs>
+          <rect class="box" x="10" y="25" width="120" height="45" rx="10"/>
+          <text x="70" y="52" text-anchor="middle" class="lbl-strong">Instanciación</text>
+          <path class="arrow" d="M130,47 H175"/>
+          <rect class="box" x="175" y="25" width="140" height="45" rx="10"/>
+          <text x="245" y="52" text-anchor="middle" class="lbl-strong">Inyección DI</text>
+          <path class="arrow" d="M315,47 H360"/>
+          <rect class="box-accent" x="360" y="25" width="150" height="45" rx="10"/>
+          <text x="435" y="52" text-anchor="middle" class="lbl-strong">@PostConstruct</text>
+          <path class="arrow" d="M510,47 H555"/>
+          <rect class="box" x="555" y="25" width="80" height="45" rx="10"/>
+          <text x="595" y="52" text-anchor="middle" class="lbl-strong" style="font-size:11px">En uso</text>
+          <path class="arrow" d="M635,47 H660"/>
+          <text x="690" y="52" text-anchor="middle" class="lbl">@PreDestroy →</text>
+        </svg>
+      </div>
+      <div class="foot-note">El constructor sólo asigna campos; la inicialización real va en <code>@PostConstruct</code>.</div>
+    </div>
+  </section>
+
+  <!-- 37. CONFIGURACIÓN EXTERNALIZADA -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title"><em>@Value</em> frente a <em>@ConfigurationProperties</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th></th><th>@Value</th><th>@ConfigurationProperties</th></tr>
+        <tr><td>Uso</td><td>Valores sueltos</td><td>Grupos de propiedades</td></tr>
+        <tr><td>Tipado</td><td>Débil (String)</td><td><b>Fuerte</b>, con <code>record</code></td></tr>
+        <tr><td>Validación</td><td>No</td><td><b>Al arrancar</b> — si falta algo, no arranca</td></tr>
+      </table>
+      <div class="foot-note">Preferido: agrupación semántica, validación temprana y autocompletado en el IDE.</div>
+    </div>
+  </section>
+
+  <!-- 38. ARQUITECTURA EN CAPAS -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">La regla de <em>dependencia</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 680 110" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead-accent" markerWidth="10" markerHeight="8" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L10,4 L0,8 Z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+          <rect class="box" x="10" y="30" width="130" height="45" rx="10"/>
+          <text x="75" y="57" text-anchor="middle" class="lbl-strong">controller</text>
+          <path class="arrow-accent" d="M140,52 H190"/>
+          <rect class="box" x="190" y="30" width="120" height="45" rx="10"/>
+          <text x="250" y="57" text-anchor="middle" class="lbl-strong">service</text>
+          <path class="arrow-accent" d="M310,52 H360"/>
+          <rect class="box" x="360" y="30" width="130" height="45" rx="10"/>
+          <text x="425" y="57" text-anchor="middle" class="lbl-strong">repository</text>
+          <path class="arrow-accent" d="M490,52 H540"/>
+          <rect class="box-accent" x="540" y="30" width="130" height="45" rx="10"/>
+          <text x="605" y="57" text-anchor="middle" class="lbl-strong">domain</text>
+        </svg>
+      </div>
+      <div class="foot-note"><code>controller</code> nunca llama a <code>repository</code> directamente. <code>domain</code> no depende de nada: ni de Spring, ni de JPA, ni de Jackson.</div>
+    </div>
+  </section>
+
+  <!-- 39. QUÉ VA EN CADA CAPA -->
+  <section class="slide">
+    <div class="kicker">06 · IoC e inyección de dependencias</div>
+    <h2 class="title">Qué va en <em>cada capa</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Capa</th><th>Contiene</th><th>No contiene</th></tr>
+        <tr><td><b>domain</b></td><td>Reglas invariantes, tipos, enums</td><td>Anotaciones de framework, SQL</td></tr>
+        <tr><td><b>repository</b></td><td>Consultas, mapeo</td><td>Reglas de negocio</td></tr>
+        <tr><td><b>service</b></td><td>Casos de uso, <code>@Transactional</code></td><td>SQL, detalles de conexión</td></tr>
+        <tr><td><b>controller</b></td><td>Validación de entrada, HTTP, DTOs</td><td>Lógica de negocio</td></tr>
+      </table>
+      <div class="foot-note">RA6 se mide así: al sustituir JDBC por JPA, la medida del éxito es cuántas líneas de <code>service/</code> tocaste. La respuesta correcta es cero.</div>
+    </div>
+  </section>
+
+  <!-- 40. DTO DE ENTRADA -->
+  <section class="slide">
+    <div class="kicker">07 · Controladores REST y validación</div>
+    <h2 class="title">El <em>DTO</em> de entrada</h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">NuevoExpedienteRequest.java</span></div>
+        <div class="term-body"><span class="c">public record</span> NuevoExpedienteRequest(
+  <span class="g">@NotBlank</span> String numero,
+  <span class="g">@NotNull @DecimalMin</span>(<span class="a">"0.0"</span>)
+    BigDecimal importe,
+  <span class="g">@Pattern</span>(regexp = <span class="a">"\\d{4}[A-Z]{3}"</span>)
+    String matricula
+) { }<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge">DTO ≠ entidad</div>
+        <h3>Frontera de la API</h3>
+        <p>El cliente nunca debe rellenar un <code>id</code> generado o un <code>estado</code> que decide el servicio. Separar DTO y dominio evita que cambios en la API obliguen a tocar el modelo de negocio.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 41. CONTROLADOR + @VALID -->
+  <section class="slide">
+    <div class="kicker">07 · Controladores REST y validación</div>
+    <h2 class="title">El controlador y <em>@Valid</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">ExpedientesController.java</span></div>
+        <div class="term-body"><span class="g">@RestController</span>
+<span class="g">@RequestMapping</span>(<span class="a">"/api/expedientes"</span>)
+<span class="c">public class</span> ExpedientesController {
+
+  <span class="g">@PostMapping</span>
+  <span class="g">@ResponseStatus</span>(HttpStatus.CREATED)
+  <span class="c">public</span> ExpedienteResponse crear(
+      <span class="a">@Valid</span> <span class="a">@RequestBody</span>
+      NuevoExpedienteRequest p) { ... }
+}<span class="cursor"></span></div>
+      </div>
+      <div class="card">
+        <div class="badge err">Error más común</div>
+        <h3>Sin <code>@Valid</code>, nada se evalúa</h3>
+        <p><code>@NotBlank</code>, <code>@NotNull</code> o <code>@Pattern</code> son sólo metadatos hasta que algo las evalúa. El código compila y el IDE no avisa.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 42. MANEJADOR DE ERRORES -->
+  <section class="slide">
+    <div class="kicker">07 · Controladores REST y validación</div>
+    <h2 class="title">Manejador de errores <em>centralizado</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">respuesta 400</span></div>
+        <div class="term-body">{
+  <span class="a">"numero"</span>: <span class="g">"El número de expediente</span>
+             <span class="g">es obligatorio"</span>,
+  <span class="a">"importe"</span>: <span class="g">"El importe debe</span>
+              <span class="g">ser mayor que 0"</span>
+}<span class="cursor"></span></div>
+      </div>
+      <ul class="list">
+        <li><span class="bul">▸</span><div><b><code>@RestControllerAdvice</code></b><span class="d"> aplica sus <code>@ExceptionHandler</code> a todos los controladores.</span></div></li>
+        <li><span class="bul">▸</span><div><b>Nunca dejes escapar</b><span class="d"> una excepción de negocio como un 500 genérico.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 43. BEAN VALIDATION -->
+  <section class="slide">
+    <div class="kicker">07 · Controladores REST y validación</div>
+    <h2 class="title">Anotaciones de <em>Bean Validation</em></h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Anotación</th><th>Se aplica a</th><th>Comprueba</th></tr>
+        <tr><td><code>@NotBlank</code></td><td>String</td><td>No null, ni vacío, ni sólo espacios.</td></tr>
+        <tr><td><code>@Size(min,max)</code></td><td>String, colección</td><td>Longitud/tamaño en rango.</td></tr>
+        <tr><td><code>@DecimalMin/Max</code></td><td>BigDecimal</td><td>Rango con precisión decimal.</td></tr>
+        <tr><td><code>@Pattern(regexp=)</code></td><td>String</td><td>Coincide con una regex.</td></tr>
+        <tr><td><code>@Past</code> / <code>@Future</code></td><td>fechas</td><td>Anterior / posterior a ahora.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 44. DTO VS SERVICE -->
+  <section class="slide">
+    <div class="kicker">07 · Controladores REST y validación</div>
+    <h2 class="title">Qué <em>NO</em> va en el DTO</h2>
+    <div class="content">
+      <table class="tbl">
+        <tr><th>Pregunta</th><th>Dónde se resuelve</th></tr>
+        <tr><td>¿Formato/tamaño/rango correcto?</td><td>DTO, con Bean Validation</td></tr>
+        <tr><td>¿Existe ya ese DNI / número de expediente?</td><td><b style="color:var(--accent)">service</b>, consultando el repositorio</td></tr>
+        <tr><td>¿Coherente con saldo, estado, plazos?</td><td><b style="color:var(--accent)">service</b></td></tr>
+        <tr><td>¿Depende de una regla del dominio (R1...)?</td><td><b style="color:var(--accent)">service</b></td></tr>
+      </table>
+      <div class="foot-note"><code>@Valid</code> se resuelve antes de tocar la base de datos ni ningún otro bean: sólo comprueba el dato aislado, nunca su significado en el dominio.</div>
+    </div>
+  </section>
+
+  <!-- 45. GITIGNORE -->
+  <section class="slide">
+    <div class="kicker">08 · Flujo de trabajo con Git</div>
+    <h2 class="title">Git es parte del <em>entregable</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">.gitignore</span></div>
+        <div class="term-body">target/
+build/
+.idea/
+<span class="rose">.env</span>
+application-local.yml
+datos/
+logs/</div>
+      </div>
+      <div class="card">
+        <div class="badge warn">Nunca se ignora</div>
+        <h3>El wrapper y compose</h3>
+        <p><code>mvnw</code>, <code>mvnw.cmd</code>, <code>.mvn/</code>, <code>pom.xml</code>, <code>compose.yaml</code> y <code>.env.example</code> — sin ellos el proyecto no es reproducible.</p>
+      </div>
+    </div>
+    <div class="foot-note">«Historial de commits que evidencie trabajo progresivo, no una entrega única en la fecha límite» — condición formal del entregable.</div>
+  </section>
+
+  <!-- 46. RAMAS POR HITO -->
+  <section class="slide">
+    <div class="kicker">08 · Flujo de trabajo con Git</div>
+    <h2 class="title">Una rama por <em>hito</em></h2>
+    <div class="content">
+      <div class="svg-card">
+        <svg viewBox="0 0 460 200" xmlns="http://www.w3.org/2000/svg">
+          <text x="10" y="45" class="lane-label">main</text>
+          <text x="10" y="145" class="lane-label">hito/ud0</text>
+          <path class="edge" d="M75,40 H155"/>
+          <path class="edge-a" d="M155,40 L215,140"/>
+          <path class="edge-a" d="M215,140 H305"/>
+          <path class="edge" d="M305,140 L365,40"/>
+          <circle class="commit" cx="75" cy="40" r="9"/>
+          <circle class="commit" cx="155" cy="40" r="9"/>
+          <circle class="commit-a" cx="215" cy="140" r="9"/>
+          <circle class="commit-a" cx="305" cy="140" r="9"/>
+          <circle class="commit-m" cx="365" cy="40" r="9"/>
+          <text x="365" y="20" text-anchor="middle" class="lbl-strong">entrega-1</text>
+        </svg>
+      </div>
+      <div class="foot-note"><code>git merge --no-ff</code> fuerza un commit de fusión: el historial conserva la evidencia del hito, en vez de aplanarlo en una línea recta.</div>
+    </div>
+  </section>
+
+  <!-- 47. CONVENTIONAL COMMITS -->
+  <section class="slide">
+    <div class="kicker">08 · Flujo de trabajo con Git</div>
+    <h2 class="title">Mensajes de <em>commit</em></h2>
+    <div class="two-col">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">correctos</span></div>
+        <div class="term-body"><span class="g">feat</span>(dominio): añade Expediente y Denuncia
+<span class="g">fix</span>(jdbc): cierra el ResultSet
+<span class="g">refactor</span>(service): extrae bonificación
+<span class="g">test</span>(repository): cubre caso inexistente
+<span class="rose">❌ cambios</span>
+<span class="rose">❌ commit final</span></div>
+      </div>
+      <div class="card">
+        <div class="badge">Un commit, una idea</div>
+        <h3>Si necesitas la palabra «y»...</h3>
+        <p>...probablemente debieran ser dos commits. Frecuencia razonable: cada vez que algo compila y las pruebas pasan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 48. ETIQUETAS DE ENTREGA -->
+  <section class="slide">
+    <div class="kicker">08 · Flujo de trabajo con Git</div>
+    <h2 class="title">La etiqueta <em>es</em> la entrega</h2>
+    <div class="content">
+      <div class="term">
+        <div class="term-bar"><div class="term-dot"></div><div class="term-dot"></div><div class="term-dot"></div><span class="term-label">$</span></div>
+        <div class="term-body"><span class="prompt">$</span> git tag -a entrega-1 -m <span class="a">"UD0-UD3"</span>
+<span class="prompt">$</span> git push origin entrega-1<span class="cursor"></span></div>
+      </div>
+      <div class="foot-note">Se corrige exactamente el commit al que apunta la etiqueta, con la fecha y hora en que se subió. Etiqueta antes del plazo, no en el minuto final.</div>
+    </div>
+  </section>
+
+  <!-- 49. QUÉ MIRAR AL REVISAR -->
+  <section class="slide">
+    <div class="kicker">08 · Flujo de trabajo con Git</div>
+    <h2 class="title">Revisión entre <em>iguales</em></h2>
+    <div class="content">
+      <ul class="list">
+        <li><span class="bul">☐</span><div><b>¿Se cierran todos los recursos?</b><span class="d"> try-with-resources.</span></div></li>
+        <li><span class="bul">☐</span><div><b>¿Hay credenciales o rutas absolutas</b><span class="d"> escritas en el código?</span></div></li>
+        <li><span class="bul">☐</span><div><b>¿Se concatenan parámetros</b><span class="d"> en alguna sentencia SQL?</span></div></li>
+        <li><span class="bul">☐</span><div><b>¿La inyección es por constructor?</b></div></li>
+        <li><span class="bul">☐</span><div><b>¿Hay estado mutable</b><span class="d"> en un bean singleton?</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 50. ACTIVIDADES -->
+  <section class="slide">
+    <div class="kicker">09 · Actividades de la UD0</div>
+    <h2 class="title">A0.1 – A0.6: <em>la entrega</em></h2>
+    <div class="content">
+      <ul class="list">
+        <li><span class="exnum">A0.1</span><div><b>Instalación y verificación</b><span class="d"> del entorno completo.</span></div></li>
+        <li><span class="exnum">A0.2</span><div><b>Esqueleto Spring Boot</b><span class="d"> y primer arranque, con Docker Compose.</span></div></li>
+        <li><span class="exnum">A0.3</span><div><b>Modelos de dominio</b><span class="d"> de MULTAGAL, sin persistencia.</span></div></li>
+        <li><span class="exnum">A0.4</span><div><b>Primer servicio inyectado</b><span class="d"> y su prueba unitaria con Mockito.</span></div></li>
+        <li><span class="exnum">A0.5</span><div><b>Controladores REST</b><span class="d"> con validación de entrada.</span></div></li>
+        <li><span class="exnum">A0.6</span><div><b>Publicación del repositorio</b><span class="d"> y flujo de ramas/PR/etiqueta.</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 51. ERRORES COMUNES TRANSVERSALES -->
+  <section class="slide">
+    <div class="kicker">Repaso transversal</div>
+    <h2 class="title">Errores <em>frecuentes</em></h2>
+    <div class="content">
+      <div class="grid cols-2">
+        <div class="card"><div class="badge err">error 400 vacío</div><h3>Sin <code>@RestControllerAdvice</code></h3><p>Spring responde 400 sin detalle de qué campo falló.</p></div>
+        <div class="card"><div class="badge err">datos perdidos</div><h3><code>docker compose down -v</code></h3><p>Borra también los volúmenes: tu base de datos entera.</p></div>
+        <div class="card"><div class="badge err">NoSuchBeanDefinitionException</div><h3>Bean fuera del paquete raíz</h3><p><code>@ComponentScan</code> no baja a otro paquete.</p></div>
+        <div class="card"><div class="badge err">carrera garantizada</div><h3>Estado mutable en un <code>@Service</code></h3><p>Los singletons se comparten entre hilos concurrentes.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 52. CIERRE -->
+  <section class="slide">
+    <div class="content" style="justify-content:center; align-items:flex-start;">
+      <div class="kicker">Fin de la UD0</div>
+      <h1 class="big">Primero se <em>descubre</em><br>la limitación</h1>
+      <p class="subtitle">Después llega la herramienta que la supera. Entorno listo, dominio esbozado, vertical mínima probada y expuesta — a por la UD1.</p>
+    </div>
+  </section>
+
+</div>
+
+<button class="nav-btn prev" id="prevBtn" aria-label="Anterior">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</button>
+<button class="nav-btn next" id="nextBtn" aria-label="Siguiente">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</button>
+
+<div style="position:fixed; bottom:0; left:0; right:0; padding: 0 68px 18px;">
+  <div class="deck-foot">
+    <span id="slideLabel">01 / 01</span>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <span>ACCESO A DATOS · UD0</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var idx = 0;
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+  function render(){
+    slides.forEach(function(s, i){ s.classList.toggle('active', i === idx); });
+    document.getElementById('slideLabel').textContent = pad(idx+1) + ' / ' + pad(total);
+    document.getElementById('progressBar').style.width = ((idx+1)/total*100) + '%';
+  }
+
+  function go(delta){
+    idx = Math.max(0, Math.min(total - 1, idx + delta));
+    render();
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', function(){ go(1); });
+  document.getElementById('prevBtn').addEventListener('click', function(){ go(-1); });
+
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown'){ go(1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ go(-1); e.preventDefault(); }
+    else if (e.key === 'Home'){ idx = 0; render(); }
+    else if (e.key === 'End'){ idx = total - 1; render(); }
+  });
+
+  var touchStartX = null;
+  window.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; });
+  window.addEventListener('touchend', function(e){
+    if (touchStartX === null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50){ go(dx < 0 ? 1 : -1); }
+    touchStartX = null;
+  });
+
+  render();
+})();
+</script>

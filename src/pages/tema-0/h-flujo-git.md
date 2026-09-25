@@ -11,7 +11,8 @@ En este módulo Git no es una herramienta auxiliar: **es parte del entregable**.
 Las entregas se materializan mediante etiquetas en el repositorio y el historial
 de commits se evalúa explícitamente.
 
-:::danger[Condición formal de los entregables]
+:::danger
+[Condición formal de los entregables]
 
 «Historial de commits que evidencie un trabajo progresivo, **no una entrega
 única en la fecha límite**.»
