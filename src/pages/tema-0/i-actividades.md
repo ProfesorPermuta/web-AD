@@ -113,6 +113,9 @@ Como mínimo:
 - Los enumerados: `Gravedad`, `EstadoExpediente`, `EstadoPermiso`,
   `ResultadoNotificacion`
 - Los objetos valor: `Coordenadas`, `DireccionPostal`, `Matricula`
+- Todas las entidades identificadas por un `UUID id`, no por su clave natural
+  (`numeroExpediente`, `matricula` o `documentoIdentidad` son atributos
+  ordinarios)
 
 ### Decisiones que debes tomar y justificar
 
@@ -164,15 +167,17 @@ núcleo estable. Compruébalo mirando los `import`.
 ### Tareas
 
 1. Define la interfaz `RepositorioExpedientes` en `repository`, con al menos:
-   `guardar`, `buscarPorNumero`, `buscarTodos` y `buscarPorEstado`.
+   `guardar`, `buscarPorId(UUID id)`, `buscarPorNumeroExpediente`,
+   `buscarTodos` y `buscarPorEstado`.
 2. Implementa `RepositorioExpedientesMemoria` con un `ConcurrentHashMap`,
    anotada con `@Repository`. Es una implementación provisional: en la UD3 la
    sustituirá una JDBC **sin tocar la capa de servicio**.
 3. Crea `ServicioExpedientes` en `service`, con **inyección por constructor**,
    que ofrezca:
-   - `obtener(String numero)` — lanza `ExpedienteNoEncontradoException` si no
+   - `obtener(UUID id)` — lanza `ExpedienteNoEncontradoException` si no
      existe.
-   - `registrar(Expediente e)` — rechaza un número duplicado.
+   - `registrar(Expediente e)` — asigna un `UUID` nuevo y rechaza un
+     `numeroExpediente` duplicado.
    - `calcularImporteConBonificacion(Expediente e, LocalDate fechaPago)` —
      aplica la [regla R1](/tema-0/b-proyecto-multagal#r1--bonificación-por-pronto-pago):
      50 % si el pago se produce dentro de los 20 días naturales siguientes a la
@@ -221,18 +226,19 @@ de entrada por anotaciones.
 ### Tareas
 
 1. Crea en `dto` los DTOs de entrada y salida necesarios para el recurso
-   `expedientes`: como mínimo `NuevoExpedienteRequest` (o equivalente) y
+   `expedientes`: como mínimo `NuevoExpedienteRequest` (número de expediente, `denunciaId`
+   e instructor, o equivalente) y
    `ExpedienteResponse`. Sigue el ejemplo del [apartado
    g](/tema-0/g-controlador-rest-validacion#el-dto-de-entrada).
 2. Anota los campos del DTO de entrada con las restricciones de [Bean
    Validation](/tema-0/g-controlador-rest-validacion#anotaciones-de-bean-validation-más-usadas)
-   que correspondan a cada campo (número obligatorio, importe positivo,
-   formato de matrícula...).
+   que correspondan a cada campo (número de expediente obligatorio y con
+   formato válido, denuncia de origen obligatoria...).
 3. Crea `ExpedientesController` en `controller`, con inyección por
    constructor de `ServicioExpedientes`, y expón como mínimo:
    - `POST /api/expedientes` — crea un expediente a partir del DTO validado
      con `@Valid`. Responde `201 Created`.
-   - `GET /api/expedientes/{numero}` — devuelve el expediente o dispara la
+   - `GET /api/expedientes/{id}` (con `id` de tipo `UUID`) — devuelve el expediente o dispara la
      excepción de «no encontrado».
 4. Crea un `@RestControllerAdvice` que traduzca:
    - los errores de validación del DTO a `400 Bad Request` con el detalle de
@@ -241,8 +247,8 @@ de entrada por anotaciones.
    - `ExpedienteNoEncontradoException` a `404 Not Found`.
 5. Comprueba manualmente con `curl` o el cliente REST de tu IDE:
    - una petición válida (`201`);
-   - una petición con el número en blanco y el importe negativo (`400`, con
-     los dos campos en el cuerpo del error);
+   - una petición con el número de expediente en blanco y sin `denunciaId`
+     (`400`, con los dos campos en el cuerpo del error);
    - una consulta de un expediente inexistente (`404`).
 
 ### Entregable
@@ -344,7 +350,7 @@ consultar los apuntes**. Son el tipo de preguntas de la defensa oral.
 13. ¿Qué evidencia aporta el historial de commits a la evaluación?
 14. ¿Qué diferencia hay entre una etiqueta y una rama?
 15. ¿Qué diferencia hay entre validar un DTO con `@Valid` y validar una regla
-    de negocio como «el DNI ya está registrado»? ¿Por qué la segunda no puede
+    de negocio como «el NIF/NIE ya está registrado»? ¿Por qué la segunda no puede
     resolverse en el DTO?
 16. ¿Qué ocurre si un método de controlador recibe `@RequestBody` sin
     `@Valid`?

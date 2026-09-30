@@ -78,6 +78,117 @@ erDiagram
     EXPEDIENTE ||--o{ ALEGACION : recibe
     EXPEDIENTE ||--o| RESOLUCION : concluye
     EXPEDIENTE ||--o{ PAGO : liquida
+
+    CONDUCTOR {
+        UUID id PK
+        string documentoIdentidad "NIF o NIE"
+        string nombre
+        string apellidos
+        string domicilio
+        date fechaExpedicionPermiso
+        int saldoPuntos
+    }
+    PERMISO_CONDUCCION {
+        UUID id PK
+        UUID conductorId FK
+        string numeroPermiso
+        string clases "ClasePermiso: AM, A1, A2, A, B, C..."
+        date fechaExpedicion
+        date fechaCaducidad
+        string estado "EstadoPermiso"
+    }
+    VEHICULO {
+        UUID id PK
+        string matricula
+        string marca
+        string modelo
+        string tipo "TipoVehiculo"
+        date fechaMatriculacion
+        string estadoItv "EstadoItv"
+    }
+    TITULARIDAD {
+        UUID id PK
+        UUID conductorId FK
+        UUID vehiculoId FK
+        date fechaAlta
+        date fechaBaja
+    }
+    RADAR {
+        UUID id PK
+        string identificador
+        string ubicacion
+        string tipo "TipoRadar"
+        int limiteVelocidadControlado
+    }
+    INFRACCION {
+        UUID id PK
+        string codigo
+        string articuloReglamento
+        string descripcion
+        decimal importeBase
+        int puntosADetraer
+        string gravedad "LEVE, GRAVE, MUY_GRAVE"
+    }
+    DENUNCIA {
+        UUID id PK
+        datetime fechaHora
+        string lugar
+        double latitud "Coordenadas"
+        double longitud "Coordenadas"
+        string tipoDenunciante "TipoDenunciante"
+        string agenteODispositivo
+        UUID radarId FK "nulo si no es radar"
+        UUID infraccionId FK
+        UUID vehiculoId FK
+        UUID conductorId FK "nulo si no identificado"
+    }
+    EXPEDIENTE {
+        UUID id PK
+        UUID denunciaId FK
+        string numeroExpediente
+        string instructor
+        string estado "EstadoExpediente"
+        decimal importe
+        date fechaIncoacion
+        date fechaNotificacion
+        date fechaLimitePrescripcion
+        date fechaResolucion
+        date fechaFirmeza
+    }
+    NOTIFICACION {
+        UUID id PK
+        UUID expedienteId FK
+        int numeroIntento
+        datetime fechaEnvio
+        string medio
+        string acuseRecibo
+        string resultado "ResultadoNotificacion"
+    }
+    ALEGACION {
+        UUID id PK
+        UUID expedienteId FK
+        date fechaPresentacion
+        string motivo
+        string documentosAdjuntos
+        string estado "EstadoAlegacion"
+    }
+    RESOLUCION {
+        UUID id PK
+        UUID expedienteId FK
+        string tipo "TipoResolucion"
+        date fecha
+        string motivacion
+        boolean firme
+        int puntosDetraidos
+    }
+    PAGO {
+        UUID id PK
+        UUID expedienteId FK
+        date fecha
+        decimal importe
+        string tipo "TipoPago"
+        decimal porcentajeBonificacion
+    }
 ```
 
 Fíjate en dos puntos que darán trabajo más adelante:
@@ -98,18 +209,17 @@ en realidad, restricciones sobre las transiciones válidas.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> INICIADO
-    INICIADO --> NOTIFICADO : notificación con acuse
-    INICIADO --> PRESCRITO : vence el plazo sin notificar
-    NOTIFICADO --> PAGADO_BONIFICADO : pago en 20 días naturales
-    NOTIFICADO --> ALEGADO : el interesado presenta alegación
-    NOTIFICADO --> RESUELTO : vence el plazo de alegaciones
+    [*] --> INCOADO
+    INCOADO --> NOTIFICADO : notificación con acuse
+    INCOADO --> PRESCRITO : vence el plazo sin notificar
+    NOTIFICADO --> EN_PLAZO_ALEGACIONES : se abre el plazo de alegaciones
+    EN_PLAZO_ALEGACIONES --> FIRME : pronto pago en 20 días naturales (renuncia a alegar)
+    EN_PLAZO_ALEGACIONES --> ALEGADO : el interesado presenta alegación
+    EN_PLAZO_ALEGACIONES --> RESUELTO : vence el plazo de alegaciones
     ALEGADO --> RESUELTO : se contestan las alegaciones
     RESUELTO --> FIRME : no cabe recurso ordinario
     RESUELTO --> SOBRESEIDO : se estiman las alegaciones
-    FIRME --> PAGADO
-    PAGADO --> [*]
-    PAGADO_BONIFICADO --> [*]
+    FIRME --> [*]
     SOBRESEIDO --> [*]
     PRESCRITO --> [*]
 ```

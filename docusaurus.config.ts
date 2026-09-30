@@ -95,6 +95,7 @@ const config: Config = {
             },
           ],
         },
+        {to: '/presentaciones', label: 'Presentaciones', position: 'left'},
         {to: '/changelogs', label: 'Changelogs', position: 'left'},
       ],
     },

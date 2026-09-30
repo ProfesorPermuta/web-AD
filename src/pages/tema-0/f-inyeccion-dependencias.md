@@ -23,8 +23,8 @@ public class ServicioExpedientes {
     private final RepositorioExpedientesJdbc repositorio =
             new RepositorioExpedientesJdbc("jdbc:mariadb://localhost:3306/multagal");
 
-    public Expediente buscar(String numero) {
-        return repositorio.buscarPorNumero(numero);
+    public Expediente buscar(UUID id) {
+        return repositorio.buscarPorId(id);
     }
 }
 ```
@@ -70,8 +70,8 @@ public class ServicioExpedientes {
         this.repositorio = repositorio;
     }
 
-    public Expediente buscar(String numero) {
-        return repositorio.buscarPorNumero(numero);
+    public Expediente buscar(UUID id) {
+        return repositorio.buscarPorId(id);
     }
 }
 ```
@@ -216,7 +216,7 @@ puerto— y conviene conocerlo ya.
 
 ```java
 public interface RepositorioExpedientes {
-    Optional<Expediente> buscarPorNumero(String numero);
+    Optional<Expediente> buscarPorId(UUID id);
 }
 
 @Repository
@@ -449,12 +449,22 @@ Así queda una vertical mínima, que es lo que construirás en la actividad
 
 ```java
 // domain/model/Expediente.java
-public record Expediente(String numero, EstadoExpediente estado,
-                         BigDecimal importe) { }
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Expediente {
+    private UUID id;
+    private String numeroExpediente;
+    private UUID denunciaId;
+    private EstadoExpediente estado;
+    private BigDecimal importe;
+    // ...resto de campos del modelo (fechas del procedimiento, instructor)
+}
 
 // repository/RepositorioExpedientes.java
 public interface RepositorioExpedientes {
-    Optional<Expediente> buscarPorNumero(String numero);
+    Optional<Expediente> buscarPorId(UUID id);
     List<Expediente> buscarTodos();
 }
 
@@ -462,11 +472,11 @@ public interface RepositorioExpedientes {
 @Repository
 public class RepositorioExpedientesMemoria implements RepositorioExpedientes {
 
-    private final Map<String, Expediente> datos = new ConcurrentHashMap<>();
+    private final Map<UUID, Expediente> datos = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<Expediente> buscarPorNumero(String numero) {
-        return Optional.ofNullable(datos.get(numero));
+    public Optional<Expediente> buscarPorId(UUID id) {
+        return Optional.ofNullable(datos.get(id));
     }
 
     @Override
@@ -485,9 +495,9 @@ public class ServicioExpedientes {
         this.repositorio = repositorio;
     }
 
-    public Expediente obtener(String numero) {
-        return repositorio.buscarPorNumero(numero)
-                .orElseThrow(() -> new ExpedienteNoEncontradoException(numero));
+    public Expediente obtener(UUID id) {
+        return repositorio.buscarPorId(id)
+                .orElseThrow(() -> new ExpedienteNoEncontradoException(id));
     }
 }
 ```
@@ -500,11 +510,12 @@ class ServicioExpedientesTest {
     @Test
     void lanzaExcepcionSiElExpedienteNoExiste() {
         RepositorioExpedientes repo = mock(RepositorioExpedientes.class);
-        when(repo.buscarPorNumero("X-1")).thenReturn(Optional.empty());
+        UUID id = UUID.randomUUID();
+        when(repo.buscarPorId(id)).thenReturn(Optional.empty());
 
         ServicioExpedientes servicio = new ServicioExpedientes(repo);
 
-        assertThatThrownBy(() -> servicio.obtener("X-1"))
+        assertThatThrownBy(() -> servicio.obtener(id))
                 .isInstanceOf(ExpedienteNoEncontradoException.class);
     }
 }

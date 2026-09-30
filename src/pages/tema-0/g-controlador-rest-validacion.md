@@ -37,30 +37,29 @@ el paquete `dto`, pensado para lo que el cliente puede y debe enviar.
 package es.edu.multagal.dto;
 
 import jakarta.validation.constraints.*;
-import java.math.BigDecimal;
+import java.util.UUID;
 
 public record NuevoExpedienteRequest(
 
         @NotBlank(message = "El número de expediente es obligatorio")
-        String numero,
+        @Pattern(regexp = "\\d{4}/\\d{6}",
+                message = "Número de expediente con formato inválido")
+        String numeroExpediente,
 
-        @NotNull(message = "El importe es obligatorio")
-        @DecimalMin(value = "0.0", inclusive = false,
-                message = "El importe debe ser mayor que 0")
-        BigDecimal importe,
+        @NotNull(message = "La denuncia de origen es obligatoria")
+        UUID denunciaId,
 
-        @NotBlank
-        @Pattern(regexp = "\\d{4}[A-Z]{3}", message = "Matrícula con formato inválido")
-        String matricula
+        @NotBlank(message = "El instructor es obligatorio")
+        String instructor
 ) { }
 ```
 
 :::tip
 [Por qué un `record` distinto de la entidad de dominio]
 
-`Expediente` (el tipo de `domain/model`) puede tener campos que el cliente
-nunca debe rellenar —un `id` generado, un `estado` que decide el servicio— o
-puede necesitar forma distinta según la operación (crear no es lo mismo que
+`Expediente` (el tipo de `domain/model`) tiene campos que el cliente
+nunca debe rellenar —el `id` generado, el `estado` y el `importe`, que decide
+el servicio a partir de la infracción de la denuncia— y además puede necesitar forma distinta según la operación (crear no es lo mismo que
 actualizar). Separar el DTO de la entidad evita anotar el dominio con
 restricciones que sólo tienen sentido en un endpoint concreto, y evita que
 cambios en la API obliguen a tocar el modelo de negocio.
@@ -80,6 +79,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/expedientes")
 public class ExpedientesController {
@@ -93,14 +94,14 @@ public class ExpedientesController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ExpedienteResponse crear(@Valid @RequestBody NuevoExpedienteRequest peticion) {
-        var expediente = servicio.registrar(peticion.numero(), peticion.importe(),
-                peticion.matricula());
+        var expediente = servicio.registrar(peticion.numeroExpediente(),
+                peticion.denunciaId(), peticion.instructor());
         return ExpedienteResponse.desde(expediente);
     }
 
-    @GetMapping("/{numero}")
-    public ExpedienteResponse obtener(@PathVariable String numero) {
-        return ExpedienteResponse.desde(servicio.obtener(numero));
+    @GetMapping("/{id}")
+    public ExpedienteResponse obtener(@PathVariable UUID id) {
+        return ExpedienteResponse.desde(servicio.obtener(id));
     }
 }
 ```
@@ -111,7 +112,7 @@ Fíjate en tres anotaciones que hacen todo el trabajo:
 |-----------|----------|
 | `@RequestBody` | Deserializa el JSON del cuerpo de la petición al tipo `NuevoExpedienteRequest`. |
 | `@Valid` | Le dice a Spring que, **antes** de ejecutar el método, valide el objeto según las anotaciones de Bean Validation de sus campos. |
-| `@PathVariable` | Vincula el fragmento `{numero}` de la ruta al parámetro `numero`. |
+| `@PathVariable` | Vincula el fragmento `{id}` de la ruta al parámetro `id`, convirtiéndolo a `UUID`. |
 
 Si `@Valid` detecta una violación, el método `crear` **no llega a ejecutarse**:
 Spring lanza una `MethodArgumentNotValidException` antes de entrar en el
@@ -180,8 +181,8 @@ Con esto, la misma petición inválida responde:
 
 ```json
 {
-  "numero": "El número de expediente es obligatorio",
-  "importe": "El importe debe ser mayor que 0"
+  "numeroExpediente": "El número de expediente es obligatorio",
+  "denunciaId": "La denuncia de origen es obligatoria"
 }
 ```
 
@@ -233,19 +234,37 @@ solo: hay que pedirlo explícitamente.
 
 ```java
 public record NuevaDenunciaRequest(
-        @NotBlank String matricula,
+        @NotNull @PastOrPresent LocalDateTime fechaHora,
+
+        @NotBlank String lugar,
 
         @Valid @NotNull                 // ← @Valid también en el campo anidado
-        DireccionRequest direccion,
+        CoordenadasRequest coordenadas,
 
-        @Valid @NotEmpty
-        List<@Valid InfraccionRequest> infracciones
+        @NotNull UUID infraccionId,
+        @NotNull UUID vehiculoId,
+
+        UUID radarId,                   // nulo si la denuncia la formula un agente
+        UUID conductorId                // nulo si aún no está identificado
+) { }
+
+public record CoordenadasRequest(
+        @NotNull @DecimalMin("-90")  @DecimalMax("90")  Double latitud,
+        @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitud
+) { }
+
+public record NuevaAlegacionRequest(
+        @NotBlank String motivo,
+
+        @NotEmpty
+        List<@NotBlank String> documentosAdjuntos   // ← restricción en cada elemento
 ) { }
 ```
 
-Sin el `@Valid` en `direccion`, Spring valida que el campo no sea `null`
+Sin el `@Valid` en `coordenadas`, Spring valida que el campo no sea `null`
 (porque hay `@NotNull`) pero **no entra** a comprobar las restricciones de
-`DireccionRequest`.
+`CoordenadasRequest`. En las colecciones, la restricción se coloca dentro de
+los `<>` para que se aplique a cada elemento.
 
 ## Relación con `@ConfigurationProperties` y `@Validated`
 
@@ -269,15 +288,18 @@ el dominio**.
 ```java
 public record NuevoConductorRequest(
         @NotBlank
-        @Pattern(regexp = "\\d{8}[A-Z]", message = "DNI con formato inválido")
-        String dni,                          // ← forma: sí es validación del DTO
+        @Pattern(regexp = "\\d{8}[A-Z]|[XYZ]\\d{7}[A-Z]",
+                message = "NIF/NIE con formato inválido")
+        String documentoIdentidad,           // ← forma: sí es validación del DTO
 
-        @NotBlank String nombre
+        @NotBlank String nombre,
+        @NotBlank String apellidos,
+        String domicilio
 ) { }
 ```
 
-`@Pattern` comprueba que el DNI **tiene forma** de DNI. Comprobar que **ese
-DNI no está ya registrado** es otra cosa completamente distinta: requiere
+`@Pattern` comprueba que el documento **tiene forma** de NIF/NIE. Comprobar
+que **ese NIF/NIE no está ya registrado** es otra cosa completamente distinta: requiere
 consultar el repositorio, y eso es lógica de negocio.
 
 :::danger
@@ -286,7 +308,7 @@ consultar el repositorio, y eso es lógica de negocio.
 Un `@Valid` se resuelve **antes** de que el controlador reciba el objeto, sin
 tocar la base de datos ni ningún otro bean. Bean Validation está diseñado
 para restricciones que se comprueban **con el dato aislado**: no puede, y no
-debe, decidir si un DNI ya existe, si un número de expediente está duplicado
+debe, decidir si un NIF/NIE ya existe, si un número de expediente está duplicado
 o si un vehículo tiene ya una sanción pendiente. Esas comprobaciones viven en
 el `service`, exactamente igual que la validación de negocio que ya
 implementaste en la actividad
@@ -299,11 +321,18 @@ public class ServicioConductores {
 
     private final RepositorioConductores repositorio;
 
-    public Conductor registrar(String dni, String nombre) {
-        if (repositorio.existePorDni(dni)) {
-            throw new ConductorYaRegistradoException(dni);   // ← lógica de negocio
+    public Conductor registrar(String documentoIdentidad, String nombre,
+                               String apellidos, String domicilio) {
+        if (repositorio.existePorDocumentoIdentidad(documentoIdentidad)) {
+            throw new ConductorYaRegistradoException(documentoIdentidad);   // ← lógica de negocio
         }
-        return repositorio.guardar(new Conductor(dni, nombre));
+        return repositorio.guardar(Conductor.builder()
+                .id(UUID.randomUUID())
+                .documentoIdentidad(documentoIdentidad)
+                .nombre(nombre)
+                .apellidos(apellidos)
+                .domicilio(domicilio)
+                .build());
     }
 }
 ```
@@ -315,7 +344,7 @@ La regla práctica para decidir dónde va cada comprobación:
 | Pregunta | Dónde se resuelve |
 |----------|--------------------|
 | ¿Tiene el campo el formato/tamaño/rango correcto? | DTO, con Bean Validation (`@Pattern`, `@Size`, `@Min`...) |
-| ¿Existe ya ese DNI / número de expediente / matrícula? | `service`, consultando el repositorio |
+| ¿Existe ya ese NIF/NIE / número de expediente / matrícula? | `service`, consultando el repositorio |
 | ¿Es coherente con otros datos del sistema (saldo, estado, plazos)? | `service` |
 | ¿Depende de una regla del dominio (por ejemplo, la [regla R1 de bonificación](/tema-0/b-proyecto-multagal#r1--bonificación-por-pronto-pago))? | `service` |
 

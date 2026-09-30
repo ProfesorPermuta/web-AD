@@ -202,7 +202,7 @@ Se exige el formato **Conventional Commits**:
 Ejemplos correctos:
 
 ```
-feat(dominio): añade los records Expediente, Denuncia e Infraccion
+feat(dominio): añade las entidades Expediente, Denuncia e Infraccion
 fix(jdbc): cierra el ResultSet en el bloque try-with-resources
 refactor(service): extrae el cálculo de la bonificación a un método propio
 test(repository): cubre el caso de expediente inexistente
@@ -282,12 +282,12 @@ UD0 — Arranque
 
 ## Qué incluye
 - Esqueleto Spring Boot con perfiles dev/prod
-- Records del dominio: Expediente, Denuncia, Infraccion, Conductor
+- Entidades del dominio: Expediente, Denuncia, Infraccion, Conductor
 - ServicioExpedientes con su prueba unitaria
 - compose.yaml con los tres servicios de datos
 
 ## Decisiones técnicas
-Ver `docs/adr/0001-records-para-el-dominio.md`
+Ver `docs/adr/0001-modelado-del-dominio.md`
 
 ## Cómo comprobarlo
 ```bash
@@ -319,7 +319,7 @@ Los ADR viven en `docs/adr/`, numerados:
 
 ```
 docs/adr/
-├── 0001-records-para-el-dominio.md
+├── 0001-modelado-del-dominio.md
 ├── 0002-jdbctemplate-sobre-jdbc-puro.md
 └── 0003-modelado-documental-del-expediente.md
 ```
