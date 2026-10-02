@@ -91,7 +91,7 @@ erDiagram
         UUID id PK
         UUID conductorId FK
         string numeroPermiso
-        string clases "ClasePermiso: AM, A1, A2, A, B, C..."
+        list clases "List de ClasePermiso: AM, A1, A2, A, B, C..."
         date fechaExpedicion
         date fechaCaducidad
         string estado "EstadoPermiso"
@@ -168,7 +168,7 @@ erDiagram
         UUID expedienteId FK
         date fechaPresentacion
         string motivo
-        string documentosAdjuntos
+        list documentosAdjuntos "List de String"
         string estado "EstadoAlegacion"
     }
     RESOLUCION {
