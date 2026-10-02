@@ -34,7 +34,7 @@ posterior.
 [Exigencia explícita]
 
 En todos los casos se te exigirá **conocer y justificar qué hace el framework
-por debajo**. Que Spring Data te genere un `findByMatricula()` sin escribir SQL
+por debajo**. Que Spring Data te genere un `findByIsbn()` sin escribir SQL
 no te exime de saber qué SQL se ejecuta, cuándo se abre la conexión y cuándo se
 cierra. Esto se comprueba en la defensa oral y en las pruebas escritas.
 
@@ -49,10 +49,10 @@ Ve a [start.spring.io](https://start.spring.io) y configura:
 | Project | **Maven** |
 | Language | **Java** |
 | Spring Boot | 4.x (la última estable, no SNAPSHOT ni M) |
-| Group | `es.edu.multagal` |
-| Artifact | `multagal` |
-| Name | `multagal` |
-| Package name | `es.edu.multagal` |
+| Group | `es.edu.biblioteca` |
+| Artifact | `biblioteca` |
+| Name | `biblioteca` |
+| Package name | `es.edu.biblioteca` |
 | Packaging | **Jar** |
 | Java | **25** |
 
@@ -68,17 +68,17 @@ También puedes generarlo desde la línea de comandos:
 ```bash
 curl https://start.spring.io/starter.zip \
   -d type=maven-project -d language=java -d bootVersion=3.4.1 \
-  -d groupId=es.edu.multagal -d artifactId=multagal \
-  -d name=multagal -d packageName=es.edu.multagal \
+  -d groupId=es.edu.biblioteca -d artifactId=biblioteca \
+  -d name=biblioteca -d packageName=es.edu.biblioteca \
   -d javaVersion=25 -d dependencies=web,devtools,lombok,validation \
-  -o multagal.zip
-unzip multagal.zip -d multagal
+  -o biblioteca.zip
+unzip biblioteca.zip -d biblioteca
 ```
 
 ## Estructura de directorios
 
 ```
-multagal/
+biblioteca/
 ├── .mvn/wrapper/            ← Maven Wrapper (¡NO ignorar en Git!)
 ├── mvnw  mvnw.cmd           ← lanzadores del wrapper
 ├── pom.xml                  ← descriptor Maven: dependencias y construcción
@@ -90,8 +90,8 @@ multagal/
 │   └── adr/                 ← el diario técnico
 └── src/
     ├── main/
-    │   ├── java/es/edu/multagal/
-    │   │   └── MultagalApplication.java   ← punto de entrada
+    │   ├── java/es/edu/biblioteca/
+    │   │   └── BibliotecaApplication.java   ← punto de entrada
     │   └── resources/
     │       ├── application.yml            ← configuración
     │       ├── application-dev.yml        ← perfil dev
@@ -99,7 +99,7 @@ multagal/
     │       ├── static/                    ← recursos estáticos
     │       └── db/migration/              ← migraciones Flyway (UD3)
     └── test/
-        ├── java/es/edu/multagal/
+        ├── java/es/edu/biblioteca/
         └── resources/
 ```
 
@@ -130,11 +130,11 @@ reaparecerá en la UD1.
         <relativePath/>
     </parent>
 
-    <groupId>es.edu.multagal</groupId>
-    <artifactId>multagal</artifactId>
+    <groupId>es.edu.biblioteca</groupId>
+    <artifactId>biblioteca</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <name>multagal</name>
-    <description>Sistema de gestión de sanciones de tráfico</description>
+    <name>biblioteca</name>
+    <description>Gestión de préstamos de una biblioteca</description>
 
     <properties>
         <java.version>25</java.version>
@@ -210,16 +210,16 @@ Starters que usaremos a lo largo del curso:
 ## El punto de entrada
 
 ```java
-package es.edu.multagal;
+package es.edu.biblioteca;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MultagalApplication {
+public class BibliotecaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MultagalApplication.class, args);
+        SpringApplication.run(BibliotecaApplication.class, args);
     }
 }
 ```
@@ -237,7 +237,7 @@ equivalente a tres:
 [El paquete raíz importa]
 
 `@ComponentScan` escanea desde el paquete de la clase anotada **hacia abajo**.
-Si `MultagalApplication` está en `es.edu.multagal` y creas un servicio en
+Si `BibliotecaApplication` está en `es.edu.biblioteca` y creas un servicio en
 `es.edu.otro`, Spring **no lo encontrará** y obtendrás un
 `NoSuchBeanDefinitionException` que no menciona el paquete por ninguna parte.
 
@@ -275,7 +275,7 @@ por la jerarquía, que se lee mucho mejor cuando la configuración crece.
 ```yaml
 spring:
   application:
-    name: multagal
+    name: biblioteca
   profiles:
     default: dev
 
@@ -284,17 +284,17 @@ server:
 
 logging:
   level:
-    es.edu.multagal: DEBUG
+    es.edu.biblioteca: DEBUG
 
-multagal:
-  entrada:
-    directorio: ./datos/entrada
-  archivo:
-    directorio: ./datos/archivo
+biblioteca:
+  importacion:
+    directorio: ./datos/importacion
+  portadas:
+    directorio: ./datos/portadas
 ```
 
-El bloque `multagal:` es configuración **propia**, no de Spring. Ahí colocaremos
-los parámetros del proyecto — rutas, plazos, importes — para no escribirlos en
+El bloque `biblioteca:` es configuración **propia**, no de Spring. Ahí colocaremos
+los parámetros del proyecto — rutas, plazos de préstamo, multas — para no escribirlos en
 el código. En el [apartado siguiente](/tema-0/f-inyeccion-dependencias) veremos
 cómo leerlos con `@ConfigurationProperties`.
 
@@ -309,7 +309,7 @@ contra MariaDB en producción, que es exactamente lo que pide la actividad A3.2.
 ```yaml
 spring:
   datasource:
-    url: jdbc:h2:mem:multagal;DB_CLOSE_DELAY=-1
+    url: jdbc:h2:mem:biblioteca;DB_CLOSE_DELAY=-1
     username: sa
     password:
   h2:
@@ -325,7 +325,7 @@ logging:
 ```yaml
 spring:
   datasource:
-    url: jdbc:mariadb://localhost:3306/multagal
+    url: jdbc:mariadb://localhost:3306/biblioteca
     username: ${MARIADB_USER}
     password: ${MARIADB_PASSWORD}
 logging:
@@ -340,10 +340,10 @@ Activación:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
 
 # por variable de entorno
-SPRING_PROFILES_ACTIVE=prod java -jar target/multagal-0.1.0-SNAPSHOT.jar
+SPRING_PROFILES_ACTIVE=prod java -jar target/biblioteca-0.1.0-SNAPSHOT.jar
 
 # por propiedad del sistema
-java -Dspring.profiles.active=prod -jar target/multagal.jar
+java -Dspring.profiles.active=prod -jar target/biblioteca.jar
 ```
 
 :::tip
@@ -390,10 +390,10 @@ Salida esperada:
 ...
  :: Spring Boot ::                (v3.4.1)
 
-INFO  --- Starting MultagalApplication using Java 25
+INFO  --- Starting BibliotecaApplication using Java 25
 INFO  --- The following 1 profile is active: "dev"
 INFO  --- Tomcat initialized with port 8080 (http)
-INFO  --- Started MultagalApplication in 1.482 seconds
+INFO  --- Started BibliotecaApplication in 1.482 seconds
 ```
 
 Comprueba en el navegador `http://localhost:8080`. Verás un error 404 de
@@ -404,7 +404,7 @@ mapeado en la raíz todavía.
 
 ```bash
 ./mvnw clean package
-java -jar target/multagal-0.1.0-SNAPSHOT.jar
+java -jar target/biblioteca-0.1.0-SNAPSHOT.jar
 ```
 
 El `spring-boot-maven-plugin` genera un **fat JAR** (o *uber JAR*): un único

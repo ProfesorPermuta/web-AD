@@ -16,14 +16,14 @@ componentes— es, en el fondo, una aplicación sistemática de estas ideas.
 Empecemos por el código que **no** vamos a escribir:
 
 ```java
-public class ServicioExpedientes {
+public class ServicioLibros {
 
     // El servicio decide él mismo qué implementación usa,
     // y la crea con new.
-    private final RepositorioExpedientesJdbc repositorio =
-            new RepositorioExpedientesJdbc("jdbc:mariadb://localhost:3306/multagal");
+    private final RepositorioLibrosJdbc repositorio =
+            new RepositorioLibrosJdbc("jdbc:mariadb://localhost:3306/biblioteca");
 
-    public Expediente buscar(UUID id) {
+    public Libro buscar(UUID id) {
         return repositorio.buscarPorId(id);
     }
 }
@@ -34,7 +34,7 @@ Funciona. Y tiene cuatro problemas serios:
 1. **Está atado a JDBC.** Para migrar a JPA en la UD4 hay que editar esta clase,
    aunque su lógica de negocio no cambie en absoluto.
 2. **No se puede probar aisladamente.** Cualquier prueba de
-   `ServicioExpedientes` necesita una MariaDB arrancada en `localhost:3306`.
+   `ServicioLibros` necesita una MariaDB arrancada en `localhost:3306`.
    No hay forma de sustituir el repositorio por un doble.
 3. **Lleva configuración dentro.** La URL está escrita en el código: viola la
    condición formal de los entregables.
@@ -60,17 +60,17 @@ contenedor entrega esas dependencias.
 
 ```java
 @Service
-public class ServicioExpedientes {
+public class ServicioLibros {
 
-    private final RepositorioExpedientes repositorio;   // ← una INTERFAZ
+    private final RepositorioLibros repositorio;   // ← una INTERFAZ
 
     // Spring ve el constructor y busca en el contexto
-    // un bean que implemente RepositorioExpedientes.
-    public ServicioExpedientes(RepositorioExpedientes repositorio) {
+    // un bean que implemente RepositorioLibros.
+    public ServicioLibros(RepositorioLibros repositorio) {
         this.repositorio = repositorio;
     }
 
-    public Expediente buscar(UUID id) {
+    public Libro buscar(UUID id) {
         return repositorio.buscarPorId(id);
     }
 }
@@ -80,7 +80,7 @@ Los cuatro problemas desaparecen:
 
 1. El servicio depende de la **interfaz**. Cambiar de JDBC a JPA es cambiar qué
    implementación se registra, sin tocar esta clase.
-2. En una prueba puedes pasarle un `Mockito.mock(RepositorioExpedientes.class)`
+2. En una prueba puedes pasarle un `Mockito.mock(RepositorioLibros.class)`
    por el constructor. Sin base de datos.
 3. La URL vive en `application.yml`, donde le corresponde.
 4. El contenedor gestiona el ciclo de vida.
@@ -90,7 +90,7 @@ Los cuatro problemas desaparecen:
 
 La inyección de dependencias es un patrón de diseño, no una característica de un
 framework. El segundo ejemplo funciona perfectamente sin Spring: basta con hacer
-`new ServicioExpedientes(new RepositorioExpedientesJdbc(...))` en algún sitio.
+`new ServicioLibros(new RepositorioLibrosJdbc(...))` en algún sitio.
 Lo que aporta Spring es hacer ese cableado automáticamente para toda la
 aplicación. Recuérdalo en la defensa oral.
 
@@ -113,7 +113,7 @@ En el arranque, el contexto:
 
 ```mermaid
 graph LR
-    A["@SpringBootApplication"] --> B["@ComponentScan<br/>escanea es.edu.multagal.**"]
+    A["@SpringBootApplication"] --> B["@ComponentScan<br/>escanea es.edu.biblioteca.**"]
     B --> C[Definiciones de beans]
     C --> D[Resolución del grafo<br/>de dependencias]
     D --> E[Instanciación + inyección]
@@ -151,15 +151,15 @@ a ello en la UD3.
 
 ```java
 @Service
-public class ServicioResolucion {
+public class ServicioPrestamos {
 
-    private final RepositorioExpedientes expedientes;
-    private final ServicioPuntos puntos;
+    private final RepositorioLibros libros;
+    private final ServicioSocios socios;
 
-    public ServicioResolucion(RepositorioExpedientes expedientes,
-                              ServicioPuntos puntos) {
-        this.expedientes = expedientes;
-        this.puntos = puntos;
+    public ServicioPrestamos(RepositorioLibros libros,
+                              ServicioSocios socios) {
+        this.libros = libros;
+        this.socios = socios;
     }
 }
 ```
@@ -178,9 +178,9 @@ innecesario. Ventajas:
 
 ```java
 @Service
-public class ServicioResolucion {
+public class ServicioPrestamos {
     @Autowired                                    // NO!!!
-    private RepositorioExpedientes expedientes;
+    private RepositorioLibros libros;
 }
 ```
 
@@ -200,9 +200,9 @@ considera defecto de diseño en las revisiones de código y en la rúbrica.
 ```java
 @Service
 @RequiredArgsConstructor          // genera el constructor con los campos final
-public class ServicioResolucion {
-    private final RepositorioExpedientes expedientes;
-    private final ServicioPuntos puntos;
+public class ServicioPrestamos {
+    private final RepositorioLibros libros;
+    private final ServicioSocios socios;
 }
 ```
 
@@ -215,15 +215,15 @@ Este es exactamente el caso de la actividad A7.2 —tres adaptadores del mismo
 puerto— y conviene conocerlo ya.
 
 ```java
-public interface RepositorioExpedientes {
-    Optional<Expediente> buscarPorId(UUID id);
+public interface RepositorioLibros {
+    Optional<Libro> buscarPorId(UUID id);
 }
 
 @Repository
-public class RepositorioExpedientesJdbc implements RepositorioExpedientes { ... }
+public class RepositorioLibrosJdbc implements RepositorioLibros { ... }
 
 @Repository
-public class RepositorioExpedientesJpa implements RepositorioExpedientes { ... }
+public class RepositorioLibrosJpa implements RepositorioLibros { ... }
 ```
 
 Con ambos registrados, Spring falla en el arranque:
@@ -237,16 +237,16 @@ Tres formas de resolverlo:
 ```java
 // 1. @Primary — uno es el predeterminado
 @Repository @Primary
-public class RepositorioExpedientesJpa implements RepositorioExpedientes { }
+public class RepositorioLibrosJpa implements RepositorioLibros { }
 
 // 2. @Qualifier — se elige explícitamente en el punto de inyección
-public ServicioExpedientes(@Qualifier("repositorioExpedientesJdbc")
-                           RepositorioExpedientes repo) { }
+public ServicioLibros(@Qualifier("repositorioLibrosJdbc")
+                           RepositorioLibros repo) { }
 
 // 3. @ConditionalOnProperty — se elige por CONFIGURACIÓN
 @Repository
-@ConditionalOnProperty(name = "multagal.persistencia", havingValue = "jdbc")
-public class RepositorioExpedientesJdbc implements RepositorioExpedientes { }
+@ConditionalOnProperty(name = "biblioteca.persistencia", havingValue = "jdbc")
+public class RepositorioLibrosJdbc implements RepositorioLibros { }
 ```
 
 La tercera es la interesante: permite cambiar de tecnología de persistencia
@@ -272,8 +272,8 @@ peticiones concurrentes. Por tanto **no debe tener estado mutable**.
 ```java
 @Service
 public class ServicioMal {
-    private Expediente actual;      // NO!!! condición de carrera garantizada
-    public void procesar(Expediente e) { this.actual = e; ... }
+    private Libro actual;      // NO!!! condición de carrera garantizada
+    public void procesar(Libro e) { this.actual = e; ... }
 }
 ```
 
@@ -296,7 +296,7 @@ graph TD
 
 ```java
 @Component
-public class VigilanteBuzon {
+public class VigilanteCatalogo {
 
     @PostConstruct
     public void iniciar() {
@@ -353,11 +353,11 @@ Dos mecanismos para leer `application.yml` desde el código.
 
 ```java
 @Component
-public class AlmacenExpedientes {
+public class AlmacenPortadas {
     private final Path directorio;
 
-    public AlmacenExpedientes(
-            @Value("${multagal.archivo.directorio}") String ruta) {
+    public AlmacenPortadas(
+            @Value("${biblioteca.portadas.directorio}") String ruta) {
         this.directorio = Path.of(ruta);
     }
 }
@@ -366,18 +366,18 @@ public class AlmacenExpedientes {
 ### `@ConfigurationProperties`, para grupos — preferido
 
 ```java
-@ConfigurationProperties(prefix = "multagal")
+@ConfigurationProperties(prefix = "biblioteca")
 @Validated
-public record PropiedadesMultagal(
-        @NotNull Entrada entrada,
-        @NotNull Archivo archivo) {
+public record PropiedadesBiblioteca(
+        @NotNull Importacion importacion,
+        @NotNull Portadas portadas) {
 
-    public record Entrada(@NotBlank String directorio) { }
-    public record Archivo(@NotBlank String directorio) { }
+    public record Importacion(@NotBlank String directorio) { }
+    public record Portadas(@NotBlank String directorio) { }
 }
 ```
 
-Activado con `@EnableConfigurationProperties(PropiedadesMultagal.class)` o con
+Activado con `@EnableConfigurationProperties(PropiedadesBiblioteca.class)` o con
 `@ConfigurationPropertiesScan` en la clase de arranque.
 
 Ventajas sobre `@Value`: tipado fuerte, agrupación semántica, **validación en el
@@ -386,16 +386,16 @@ producción a las tres semanas) y autocompletado en el IDE.
 
 ## Arquitectura en capas del proyecto
 
-Esta es la estructura de paquetes obligatoria del proyecto MULTAGAL. Respétala
+Esta es la estructura de paquetes obligatoria en los proyectos del módulo. Respétala
 desde el primer commit: reorganizar paquetes en la UD5 es doloroso.
 
 ```
-es.edu.multagal
-├── MultagalApplication.java
+es.edu.biblioteca
+├── BibliotecaApplication.java
 ├── config/            ← clases @Configuration y @ConfigurationProperties
 ├── domain/            ← el modelo: entidades, records, enums, VOs
 │   ├── model/
-│   └── exception/     ← la jerarquía MultagalException (UD1)
+│   └── exception/     ← la jerarquía BibliotecaException (UD1)
 ├── repository/        ← acceso a datos: interfaces + implementaciones
 ├── service/           ← lógica de negocio y transacciones
 ├── controller/        ← puntos de entrada HTTP
@@ -425,7 +425,7 @@ Las flechas van **en un solo sentido**. En concreto:
 :::info[Por qué esto es el RA6]
 
 «Programar componentes de acceso a datos» consiste precisamente en esto: que la
-capa de negocio dependa de una **interfaz** (`RepositorioExpedientes`) y no de
+capa de negocio dependa de una **interfaz** (`RepositorioLibros`) y no de
 una tecnología. Cuando en la UD4 sustituyas la implementación JDBC por una JPA,
 la medida del éxito será cuántas líneas de `service/` tuviste que tocar. La
 respuesta correcta es **cero**.
@@ -448,56 +448,57 @@ Así queda una vertical mínima, que es lo que construirás en la actividad
 [A0.4](/tema-0/i-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria).
 
 ```java
-// domain/model/Expediente.java
+// domain/model/Libro.java
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Expediente {
+public class Libro {
     private UUID id;
-    private String numeroExpediente;
-    private UUID denunciaId;
-    private EstadoExpediente estado;
-    private BigDecimal importe;
-    // ...resto de campos del modelo (fechas del procedimiento, instructor)
+    private String isbn;
+    private String titulo;
+    private UUID autorId;
+    private EstadoLibro estado;
+    private BigDecimal precio;
+    // ...resto de campos del modelo (editorial, año de publicación)
 }
 
-// repository/RepositorioExpedientes.java
-public interface RepositorioExpedientes {
-    Optional<Expediente> buscarPorId(UUID id);
-    List<Expediente> buscarTodos();
+// repository/RepositorioLibros.java
+public interface RepositorioLibros {
+    Optional<Libro> buscarPorId(UUID id);
+    List<Libro> buscarTodos();
 }
 
-// repository/RepositorioExpedientesMemoria.java
+// repository/RepositorioLibrosMemoria.java
 @Repository
-public class RepositorioExpedientesMemoria implements RepositorioExpedientes {
+public class RepositorioLibrosMemoria implements RepositorioLibros {
 
-    private final Map<UUID, Expediente> datos = new ConcurrentHashMap<>();
+    private final Map<UUID, Libro> datos = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<Expediente> buscarPorId(UUID id) {
+    public Optional<Libro> buscarPorId(UUID id) {
         return Optional.ofNullable(datos.get(id));
     }
 
     @Override
-    public List<Expediente> buscarTodos() {
+    public List<Libro> buscarTodos() {
         return List.copyOf(datos.values());
     }
 }
 
-// service/ServicioExpedientes.java
+// service/ServicioLibros.java
 @Service
-public class ServicioExpedientes {
+public class ServicioLibros {
 
-    private final RepositorioExpedientes repositorio;
+    private final RepositorioLibros repositorio;
 
-    public ServicioExpedientes(RepositorioExpedientes repositorio) {
+    public ServicioLibros(RepositorioLibros repositorio) {
         this.repositorio = repositorio;
     }
 
-    public Expediente obtener(UUID id) {
+    public Libro obtener(UUID id) {
         return repositorio.buscarPorId(id)
-                .orElseThrow(() -> new ExpedienteNoEncontradoException(id));
+                .orElseThrow(() -> new LibroNoEncontradoException(id));
     }
 }
 ```
@@ -505,18 +506,18 @@ public class ServicioExpedientes {
 Y su prueba, **sin contenedor y sin base de datos**:
 
 ```java
-class ServicioExpedientesTest {
+class ServicioLibrosTest {
 
     @Test
-    void lanzaExcepcionSiElExpedienteNoExiste() {
-        RepositorioExpedientes repo = mock(RepositorioExpedientes.class);
+    void lanzaExcepcionSiElLibroNoExiste() {
+        RepositorioLibros repo = mock(RepositorioLibros.class);
         UUID id = UUID.randomUUID();
         when(repo.buscarPorId(id)).thenReturn(Optional.empty());
 
-        ServicioExpedientes servicio = new ServicioExpedientes(repo);
+        ServicioLibros servicio = new ServicioLibros(repo);
 
         assertThatThrownBy(() -> servicio.obtener(id))
-                .isInstanceOf(ExpedienteNoEncontradoException.class);
+                .isInstanceOf(LibroNoEncontradoException.class);
     }
 }
 ```

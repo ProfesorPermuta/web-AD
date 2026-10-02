@@ -53,7 +53,7 @@ compilar, no de funcionar distinto.
 
 `@Data` genera `equals()`/`hashCode()` sobre todos los campos, incluidas las
 relaciones. En una entidad JPA con colecciones asociadas (por ejemplo
-`Expediente` con sus `Notificacion`) eso puede disparar cargas perezosas
+`Autor` con sus `Libro`) eso puede disparar cargas perezosas
 inesperadas o bucles infinitos si dos entidades se referencian mutuamente.
 Cuando llegues a la UD4, prefiere anotaciones sueltas (`@Getter`, `@Setter`) y
 un `equals()`/`hashCode()` basado sólo en el identificador.

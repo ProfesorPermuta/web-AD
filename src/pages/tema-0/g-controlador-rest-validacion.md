@@ -33,33 +33,33 @@ la frontera de la API**. No es la entidad del dominio: es un tipo aparte, en
 el paquete `dto`, pensado para lo que el cliente puede y debe enviar.
 
 ```java
-// dto/NuevoExpedienteRequest.java
-package es.edu.multagal.dto;
+// dto/NuevoLibroRequest.java
+package es.edu.biblioteca.dto;
 
 import jakarta.validation.constraints.*;
 import java.util.UUID;
 
-public record NuevoExpedienteRequest(
+public record NuevoLibroRequest(
 
-        @NotBlank(message = "El número de expediente es obligatorio")
-        @Pattern(regexp = "\\d{4}/\\d{6}",
-                message = "Número de expediente con formato inválido")
-        String numeroExpediente,
+        @NotBlank(message = "El ISBN es obligatorio")
+        @Pattern(regexp = "\\d{13}",
+                message = "ISBN con formato inválido")
+        String isbn,
 
-        @NotNull(message = "La denuncia de origen es obligatoria")
-        UUID denunciaId,
+        @NotNull(message = "El autor es obligatorio")
+        UUID autorId,
 
-        @NotBlank(message = "El instructor es obligatorio")
-        String instructor
+        @NotBlank(message = "El título es obligatorio")
+        String titulo
 ) { }
 ```
 
 :::tip
 [Por qué un `record` distinto de la entidad de dominio]
 
-`Expediente` (el tipo de `domain/model`) tiene campos que el cliente
-nunca debe rellenar —el `id` generado, el `estado` y el `importe`, que decide
-el servicio a partir de la infracción de la denuncia— y además puede necesitar forma distinta según la operación (crear no es lo mismo que
+`Libro` (el tipo de `domain/model`) tiene campos que el cliente
+nunca debe rellenar —el `id` generado, el `estado` de disponibilidad y el
+número de `ejemplares` disponibles, que gestiona el servicio— y además puede necesitar forma distinta según la operación (crear no es lo mismo que
 actualizar). Separar el DTO de la entidad evita anotar el dominio con
 restricciones que sólo tienen sentido en un endpoint concreto, y evita que
 cambios en la API obliguen a tocar el modelo de negocio.
@@ -69,11 +69,11 @@ cambios en la API obliguen a tocar el modelo de negocio.
 ## El controlador
 
 ```java
-// controller/ExpedientesController.java
-package es.edu.multagal.controller;
+// controller/LibrosController.java
+package es.edu.biblioteca.controller;
 
-import es.edu.multagal.dto.NuevoExpedienteRequest;
-import es.edu.multagal.service.ServicioExpedientes;
+import es.edu.biblioteca.dto.NuevoLibroRequest;
+import es.edu.biblioteca.service.ServicioLibros;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -82,26 +82,26 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/expedientes")
-public class ExpedientesController {
+@RequestMapping("/api/libros")
+public class LibrosController {
 
-    private final ServicioExpedientes servicio;
+    private final ServicioLibros servicio;
 
-    public ExpedientesController(ServicioExpedientes servicio) {
+    public LibrosController(ServicioLibros servicio) {
         this.servicio = servicio;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ExpedienteResponse crear(@Valid @RequestBody NuevoExpedienteRequest peticion) {
-        var expediente = servicio.registrar(peticion.numeroExpediente(),
-                peticion.denunciaId(), peticion.instructor());
-        return ExpedienteResponse.desde(expediente);
+    public LibroResponse crear(@Valid @RequestBody NuevoLibroRequest peticion) {
+        var libro = servicio.registrar(peticion.isbn(),
+                peticion.autorId(), peticion.titulo());
+        return LibroResponse.desde(libro);
     }
 
     @GetMapping("/{id}")
-    public ExpedienteResponse obtener(@PathVariable UUID id) {
-        return ExpedienteResponse.desde(servicio.obtener(id));
+    public LibroResponse obtener(@PathVariable UUID id) {
+        return LibroResponse.desde(servicio.obtener(id));
     }
 }
 ```
@@ -110,7 +110,7 @@ Fíjate en tres anotaciones que hacen todo el trabajo:
 
 | Anotación | Qué hace |
 |-----------|----------|
-| `@RequestBody` | Deserializa el JSON del cuerpo de la petición al tipo `NuevoExpedienteRequest`. |
+| `@RequestBody` | Deserializa el JSON del cuerpo de la petición al tipo `NuevoLibroRequest`. |
 | `@Valid` | Le dice a Spring que, **antes** de ejecutar el método, valide el objeto según las anotaciones de Bean Validation de sus campos. |
 | `@PathVariable` | Vincula el fragmento `{id}` de la ruta al parámetro `id`, convirtiéndolo a `UUID`. |
 
@@ -125,7 +125,7 @@ cuerpo del controlador.
 que algo las evalúa. Sin `@Valid` en la firma del método, Spring deserializa
 el JSON igual y las restricciones se ignoran por completo. Es el error más
 común al introducir validación: el código compila, el IDE no avisa, y el
-`NuevoExpedienteRequest("", null, "")` pasa sin problema.
+`NuevoLibroRequest("", null, "")` pasa sin problema.
 
 :::
 
@@ -139,7 +139,7 @@ Request** con un cuerpo generado automáticamente:
   "timestamp": "2026-09-14T10:15:30.000+00:00",
   "status": 400,
   "error": "Bad Request",
-  "path": "/api/expedientes"
+  "path": "/api/libros"
 }
 ```
 
@@ -150,7 +150,7 @@ eso se captura la excepción con un manejador global.
 
 ```java
 // controller/ManejadorErrores.java
-package es.edu.multagal.controller;
+package es.edu.biblioteca.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -181,8 +181,8 @@ Con esto, la misma petición inválida responde:
 
 ```json
 {
-  "numeroExpediente": "El número de expediente es obligatorio",
-  "denunciaId": "La denuncia de origen es obligatoria"
+  "isbn": "El ISBN es obligatorio",
+  "autorId": "El autor es obligatorio"
 }
 ```
 
@@ -193,7 +193,7 @@ Con esto, la misma petición inválida responde:
 | `ResponseEntity<T>` | Permite controlar explícitamente el código de estado y el cuerpo de la respuesta, en vez de dejar que Spring use uno por defecto. |
 
 :::note
-[¿Y las excepciones de negocio, como `ExpedienteNoEncontradoException`?]
+[¿Y las excepciones de negocio, como `LibroNoEncontradoException`?]
 
 El mismo `@RestControllerAdvice` es el sitio para traducirlas a un código
 HTTP con sentido (`404` para «no encontrado», `409` para «número duplicado»).
@@ -233,19 +233,18 @@ Si un DTO contiene otro objeto o una lista, `@Valid` no baja de nivel por sí
 solo: hay que pedirlo explícitamente.
 
 ```java
-public record NuevaDenunciaRequest(
-        @NotNull @PastOrPresent LocalDateTime fechaHora,
+public record NuevaSucursalRequest(
+        @NotBlank String nombre,
 
-        @NotBlank String lugar,
+        @NotNull @PastOrPresent LocalDate fechaApertura,
 
         @Valid @NotNull                 // ← @Valid también en el campo anidado
         CoordenadasRequest coordenadas,
 
-        @NotNull UUID infraccionId,
-        @NotNull UUID vehiculoId,
+        @NotNull UUID ciudadId,
 
-        UUID radarId,                   // nulo si la denuncia la formula un agente
-        UUID conductorId                // nulo si aún no está identificado
+        UUID responsableId,             // nulo si aún no hay responsable asignado
+        UUID sucursalMatrizId           // nulo si no depende de otra sucursal
 ) { }
 
 public record CoordenadasRequest(
@@ -253,11 +252,11 @@ public record CoordenadasRequest(
         @NotNull @DecimalMin("-180") @DecimalMax("180") Double longitud
 ) { }
 
-public record NuevaAlegacionRequest(
-        @NotBlank String motivo,
+public record NuevaResenaRequest(
+        @NotBlank String comentario,
 
         @NotEmpty
-        List<@NotBlank String> documentosAdjuntos   // ← restricción en cada elemento
+        List<@NotBlank String> etiquetas            // ← restricción en cada elemento
 ) { }
 ```
 
@@ -286,7 +285,7 @@ el formato correcto, que esté en un rango. No comprueba su **significado en
 el dominio**.
 
 ```java
-public record NuevoConductorRequest(
+public record NuevoSocioRequest(
         @NotBlank
         @Pattern(regexp = "\\d{8}[A-Z]|[XYZ]\\d{7}[A-Z]",
                 message = "NIF/NIE con formato inválido")
@@ -308,8 +307,8 @@ consultar el repositorio, y eso es lógica de negocio.
 Un `@Valid` se resuelve **antes** de que el controlador reciba el objeto, sin
 tocar la base de datos ni ningún otro bean. Bean Validation está diseñado
 para restricciones que se comprueban **con el dato aislado**: no puede, y no
-debe, decidir si un NIF/NIE ya existe, si un número de expediente está duplicado
-o si un vehículo tiene ya una sanción pendiente. Esas comprobaciones viven en
+debe, decidir si un NIF/NIE ya existe, si un ISBN está duplicado
+o si un socio tiene ya un préstamo vencido. Esas comprobaciones viven en
 el `service`, exactamente igual que la validación de negocio que ya
 implementaste en la actividad
 [A0.4](/tema-0/i-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria)
@@ -317,16 +316,16 @@ para el número de expediente duplicado.
 
 ```java
 @Service
-public class ServicioConductores {
+public class ServicioSocios {
 
-    private final RepositorioConductores repositorio;
+    private final RepositorioSocios repositorio;
 
-    public Conductor registrar(String documentoIdentidad, String nombre,
+    public Socio registrar(String documentoIdentidad, String nombre,
                                String apellidos, String domicilio) {
         if (repositorio.existePorDocumentoIdentidad(documentoIdentidad)) {
-            throw new ConductorYaRegistradoException(documentoIdentidad);   // ← lógica de negocio
+            throw new SocioYaRegistradoException(documentoIdentidad);   // ← lógica de negocio
         }
-        return repositorio.guardar(Conductor.builder()
+        return repositorio.guardar(Socio.builder()
                 .id(UUID.randomUUID())
                 .documentoIdentidad(documentoIdentidad)
                 .nombre(nombre)
@@ -344,9 +343,9 @@ La regla práctica para decidir dónde va cada comprobación:
 | Pregunta | Dónde se resuelve |
 |----------|--------------------|
 | ¿Tiene el campo el formato/tamaño/rango correcto? | DTO, con Bean Validation (`@Pattern`, `@Size`, `@Min`...) |
-| ¿Existe ya ese NIF/NIE / número de expediente / matrícula? | `service`, consultando el repositorio |
-| ¿Es coherente con otros datos del sistema (saldo, estado, plazos)? | `service` |
-| ¿Depende de una regla del dominio (por ejemplo, la [regla R1 de bonificación](/tema-0/b-proyecto-multagal#r1--bonificación-por-pronto-pago))? | `service` |
+| ¿Existe ya ese NIF/NIE / ISBN / número de carnet? | `service`, consultando el repositorio |
+| ¿Es coherente con otros datos del sistema (ejemplares disponibles, estado, plazos)? | `service` |
+| ¿Depende de una regla del dominio (por ejemplo, un socio no puede tener más de tres préstamos activos)? | `service` |
 
 Mezclar ambas cosas tiene un coste concreto: si un repositorio de
 `@NotBlank` empezara a consultar la base de datos, cada validación de cada
