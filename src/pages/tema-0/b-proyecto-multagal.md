@@ -49,7 +49,7 @@ sancionador español y aparecerán en todos los enunciados del curso.
 
 | Entidad | Descripción |
 |---------|-------------|
-| `Conductor` | Titular de permiso de conducción. NIF/NIE, nombre, domicilio, fecha de expedición, saldo de puntos. |
+| `Conductor` | Titular de permiso de conducción. NIF/NIE, nombre, domicilio, saldo de puntos. |
 | `PermisoConduccion` | Permiso asociado a un conductor, con sus clases (A, B, C…), fechas de validez y estado. |
 | `Vehiculo` | Matrícula, marca, modelo, tipo, fecha de matriculación, estado de ITV. |
 | `Titularidad` | Relación temporal N:M entre `Conductor` y `Vehiculo` (fecha de alta y de baja). |
@@ -85,7 +85,6 @@ erDiagram
         string nombre
         string apellidos
         string domicilio
-        date fechaExpedicionPermiso
         int saldoPuntos
     }
     PERMISO_CONDUCCION {
