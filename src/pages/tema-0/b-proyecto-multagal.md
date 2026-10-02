@@ -4,6 +4,7 @@ description: Modelo conceptual del sistema de gestión de sanciones de tráfico 
 ---
 
 import NextPageButton from '@site/src/components/NextPageButton';
+import DownloadButton from '@site/src/components/DownloadButton';
 
 # El proyecto MULTAGAL
 
@@ -38,7 +39,7 @@ sancionador español y aparecerán en todos los enunciados del curso.
 | **Instructor** | Órgano que tramita el expediente. |
 | **Notificación** | Comunicación formal al interesado. Puede requerir varios intentos. |
 | **Alegación** | Escrito con el que el interesado se opone a la denuncia o aporta pruebas. |
-| **Resolución** | Acto que pone fin al expediente: sanción firme, sobreseimiento o estimación de alegaciones. |
+| **Resolución** | Acto que pone fin al expediente: sanción o sobreseimiento (este último, entre otros motivos, cuando se estiman las alegaciones). |
 | **Firmeza** | Situación en la que la resolución ya no admite recurso ordinario. Sólo entonces se ejecuta. |
 | **Detracción de puntos** | Descuento del saldo del permiso, que sólo ocurre con resolución firme. |
 | **Prescripción** | Extinción de la responsabilidad por transcurso del plazo sin actuación administrativa. |
@@ -50,38 +51,38 @@ sancionador español y aparecerán en todos los enunciados del curso.
 | Entidad | Descripción |
 |---------|-------------|
 | `Conductor` | Titular de permiso de conducción. NIF/NIE, nombre, domicilio, saldo de puntos. |
-| `PermisoConduccion` | Permiso asociado a un conductor, con sus clases (A, B, C…), fechas de validez y estado. |
+| `PermisoConduccion` | Permiso de una única clase (A, B, C…) asociado a un conductor, con sus propias fechas de validez y estado. Un conductor tiene un permiso por cada clase que posee. |
 | `Vehiculo` | Matrícula, marca, modelo, tipo, fecha de matriculación, estado de ITV. |
 | `Titularidad` | Relación temporal N:M entre `Conductor` y `Vehiculo` (fecha de alta y de baja). |
 | `Infraccion` | Catálogo normativo: código, artículo del Reglamento, descripción, importe base, puntos a detraer, gravedad (leve / grave / muy grave). |
-| `Denuncia` | Hecho denunciado: fecha y hora, lugar (con coordenadas), agente o dispositivo denunciante, infracción imputada, vehículo, conductor identificado (si lo hay). |
+| `Denuncia` | Hecho denunciado: fecha y hora, lugar (con coordenadas), tipo de denunciante (agente o radar), identificador del agente (si lo hay), velocidad medida (si la capta un radar), infracción imputada, vehículo, conductor identificado (si lo hay). |
 | `Expediente` | Tramitación administrativa de una denuncia: número de expediente, estado, importe, fechas del procedimiento. |
 | `Notificacion` | Intentos de notificación al interesado, con acuse y resultado. |
 | `Alegacion` | Escrito presentado por el interesado, con documentos adjuntos. |
 | `Resolucion` | Acto administrativo que pone fin al expediente. |
-| `Pago` | Abonos totales o parciales, con posible bonificación por pronto pago. |
+| `Pago` | Abono del importe del expediente, con posible bonificación por pronto pago. |
 | `Radar` | Dispositivo de captación automática: identificador, ubicación, tipo, límite de velocidad controlado. |
 
 ### Relaciones principales
 
 ```mermaid
 erDiagram
-    CONDUCTOR ||--o{ PERMISO_CONDUCCION : posee
-    CONDUCTOR ||--o{ TITULARIDAD : "es titular en"
-    VEHICULO  ||--o{ TITULARIDAD : "figura en"
-    RADAR     ||--o{ DENUNCIA : capta
-    INFRACCION ||--o{ DENUNCIA : tipifica
-    VEHICULO  ||--o{ DENUNCIA : "implicado en"
-    CONDUCTOR ||--o{ DENUNCIA : "identificado en"
-    DENUNCIA  ||--|| EXPEDIENTE : origina
-    EXPEDIENTE ||--o{ NOTIFICACION : genera
-    EXPEDIENTE ||--o{ ALEGACION : recibe
-    EXPEDIENTE ||--o| RESOLUCION : concluye
-    EXPEDIENTE ||--o{ PAGO : liquida
+    CONDUCTOR ||--o{ PERMISO_CONDUCCION : "posee (1 : 0..N)"
+    CONDUCTOR ||--o{ TITULARIDAD : "es titular en (1 : 0..N)"
+    VEHICULO  ||--o{ TITULARIDAD : "figura en (1 : 0..N)"
+    RADAR     ||--o{ DENUNCIA : "capta (1 : 0..N)"
+    INFRACCION ||--o{ DENUNCIA : "tipifica (1 : 0..N)"
+    VEHICULO  ||--o{ DENUNCIA : "implicado en (1 : 0..N)"
+    CONDUCTOR ||--o{ DENUNCIA : "identificado en (1 : 0..N)"
+    DENUNCIA  ||--|| EXPEDIENTE : "origina (1 : 1)"
+    EXPEDIENTE ||--o{ NOTIFICACION : "genera (1 : 0..N)"
+    EXPEDIENTE ||--o{ ALEGACION : "recibe (1 : 0..N)"
+    EXPEDIENTE ||--o| RESOLUCION : "concluye (1 : 0..1)"
+    EXPEDIENTE ||--o{ PAGO : "liquida (1 : 0..N)"
 
     CONDUCTOR {
         UUID id PK
-        string documentoIdentidad "NIF o NIE"
+        string documentoIdentidad UK "NIF o NIE"
         string nombre
         string apellidos
         string domicilio
@@ -90,15 +91,15 @@ erDiagram
     PERMISO_CONDUCCION {
         UUID id PK
         UUID conductorId FK
-        string numeroPermiso
-        list clases "List de ClasePermiso: AM, A1, A2, A, B, C..."
+        string numeroPermiso "no único: se repite en cada clase del conductor"
+        string clase "ClasePermiso: AM, A1, A2, A, B, C..."
         date fechaExpedicion
         date fechaCaducidad
         string estado "EstadoPermiso"
     }
     VEHICULO {
         UUID id PK
-        string matricula
+        string matricula UK
         string marca
         string modelo
         string tipo "TipoVehiculo"
@@ -114,14 +115,14 @@ erDiagram
     }
     RADAR {
         UUID id PK
-        string identificador
+        string identificador UK
         string ubicacion
         string tipo "TipoRadar"
         int limiteVelocidadControlado
     }
     INFRACCION {
         UUID id PK
-        string codigo
+        string codigo UK
         string articuloReglamento
         string descripcion
         decimal importeBase
@@ -135,7 +136,8 @@ erDiagram
         double latitud "Coordenadas"
         double longitud "Coordenadas"
         string tipoDenunciante "TipoDenunciante"
-        string agenteODispositivo
+        string identificadorAgente "nulo si la capta un radar"
+        int velocidadMedida "km/h; nulo si no es radar"
         UUID radarId FK "nulo si no es radar"
         UUID infraccionId FK
         UUID vehiculoId FK
@@ -143,13 +145,12 @@ erDiagram
     }
     EXPEDIENTE {
         UUID id PK
-        UUID denunciaId FK
-        string numeroExpediente
+        UUID denunciaId FK, UK
+        string numeroExpediente UK
         string instructor
         string estado "EstadoExpediente"
         decimal importe
         date fechaIncoacion
-        date fechaNotificacion
         date fechaLimitePrescripcion
         date fechaResolucion
         date fechaFirmeza
@@ -173,7 +174,7 @@ erDiagram
     }
     RESOLUCION {
         UUID id PK
-        UUID expedienteId FK
+        UUID expedienteId FK, UK
         string tipo "TipoResolucion"
         date fecha
         string motivacion
@@ -189,6 +190,49 @@ erDiagram
         decimal porcentajeBonificacion
     }
 ```
+
+`PK` es la clave primaria, `FK` una clave ajena y `UK` un campo con restricción
+de unicidad (`UNIQUE`). Los `id` son claves sustitutas: los campos de negocio
+`documentoIdentidad`, `matricula`, `codigo`, `identificador` y
+`numeroExpediente` siguen siendo únicos. `numeroPermiso` **no** lo es, porque se
+repite en todos los permisos (uno por clase) de un mismo conductor.
+
+<DownloadButton file="diagramas/multagal-er.png" filename="multagal-diagrama-er.png">
+Descargar diagrama ER (PNG)
+</DownloadButton>
+
+### Tipos enumerados
+
+Varios atributos del diagrama sólo admiten un conjunto cerrado de valores. Se
+modelarán como `enum` de Java; esta es la lista de valores válidos de cada uno:
+
+| Tipo | Se usa en | Valores |
+|------|-----------|---------|
+| `ClasePermiso` | `PermisoConduccion.clase` | `AM`, `A1`, `A2`, `A`, `B`, `BE`, `C1`, `C`, `D1`, `D` |
+| `EstadoPermiso` | `PermisoConduccion.estado` | `VIGENTE`, `SUSPENDIDO`, `CADUCADO`, `REVOCADO` |
+| `TipoVehiculo` | `Vehiculo.tipo` | `TURISMO`, `MOTOCICLETA` |
+| `EstadoItv` | `Vehiculo.estadoItv` | `VIGENTE`, `CADUCADA`, `DESFAVORABLE` |
+| `TipoRadar` | `Radar.tipo` | `FIJO`, `MOVIL` |
+| `Gravedad` | `Infraccion.gravedad` | `LEVE`, `GRAVE`, `MUY_GRAVE` |
+| `TipoDenunciante` | `Denuncia.tipoDenunciante` | `AGENTE`, `RADAR` |
+| `EstadoExpediente` | `Expediente.estado` | `INCOADO`, `NOTIFICADO`, `EN_PLAZO_ALEGACIONES`, `ALEGADO`, `RESUELTO`, `FIRME`, `SOBRESEIDO`, `PRESCRITO` |
+| `ResultadoNotificacion` | `Notificacion.resultado` | `ENTREGADA`, `AUSENTE`, `REHUSADA`, `DIRECCION_DESCONOCIDA` |
+| `EstadoAlegacion` | `Alegacion.estado` | `PENDIENTE`, `ESTIMADA`, `DESESTIMADA` |
+| `TipoResolucion` | `Resolucion.tipo` | `SANCION`, `SOBRESEIMIENTO` |
+| `TipoPago` | `Pago.tipo` | `TOTAL`, `PRONTO_PAGO` |
+
+:::note[Pagos parciales]
+
+Por ahora el modelo de `Pago` **no contempla pagos parciales**: cada expediente
+se liquida con un único pago, total o con bonificación por pronto pago. Aun así
+la relación `Expediente`–`Pago` se ha dejado como `1 : 0..N` y `TipoPago` es un
+enumerado, de modo que añadir un valor `PARCIAL` (y calcular el importe pendiente
+a partir de la suma de pagos) no obligará a cambiar el esquema.
+
+:::
+
+Los valores de `EstadoExpediente` son los nodos de la máquina de estados que
+aparece [más abajo](#estados-del-expediente).
 
 Fíjate en dos puntos que darán trabajo más adelante:
 
@@ -212,7 +256,7 @@ stateDiagram-v2
     INCOADO --> NOTIFICADO : notificación con acuse
     INCOADO --> PRESCRITO : vence el plazo sin notificar
     NOTIFICADO --> EN_PLAZO_ALEGACIONES : se abre el plazo de alegaciones
-    EN_PLAZO_ALEGACIONES --> FIRME : pronto pago en 20 días naturales (renuncia a alegar)
+    EN_PLAZO_ALEGACIONES --> RESUELTO : pronto pago en 20 días naturales (renuncia a alegar)
     EN_PLAZO_ALEGACIONES --> ALEGADO : el interesado presenta alegación
     EN_PLAZO_ALEGACIONES --> RESUELTO : vence el plazo de alegaciones
     ALEGADO --> RESUELTO : se contestan las alegaciones
@@ -234,7 +278,8 @@ transacciones, las validaciones y las consultas interesantes.
 > días naturales** siguientes a la notificación, con **renuncia a alegaciones**.
 
 Implica: cálculo de plazos sobre fechas, y un efecto lateral — pagar cierra la
-vía de alegación.
+vía de alegación y el expediente pasa a `RESUELTO` con una `Resolucion` de tipo
+`SANCION`, que después adquiere firmeza como cualquier otra.
 
 ### R2 — La detracción de puntos exige firmeza
 
@@ -243,11 +288,11 @@ vía de alegación.
 Implica: no basta con que exista una `Resolucion`; hay que comprobar su estado
 antes de tocar el saldo del conductor.
 
-### R3 — Saldo cero ⇒ permiso suspendido, atómicamente
+### R3 — Saldo cero ⇒ permisos suspendidos, atómicamente
 
-> Un conductor con saldo de puntos igual a cero queda con el permiso
-> **suspendido**: la actualización del saldo y el cambio de estado del permiso
-> deben ser **atómicos**.
+> Un conductor con saldo de puntos igual a cero queda con **todos sus permisos
+> suspendidos** (uno por cada clase que posea): la actualización del saldo y el
+> cambio de estado de **cada uno** de sus permisos deben ser **atómicos**.
 
 :::danger[Este es *el* caso transaccional del curso]
 
@@ -255,8 +300,8 @@ Esta regla se reimplementa en la UD3 (JDBC), en la UD4 (JPA) y se compara en la
 UD5. Es el hilo conductor: la misma operación de negocio resuelta con
 tecnologías distintas, para que veas qué cambia y qué no.
 
-Si el `UPDATE` del saldo tiene éxito y el del permiso falla, quedas con un
-conductor a 0 puntos y el permiso activo. Eso es corrupción de datos, y es
+Si el `UPDATE` del saldo tiene éxito y el de alguno de los permisos falla,
+quedas con un conductor a 0 puntos y algún permiso activo. Eso es corrupción de datos, y es
 exactamente lo que una transacción evita.
 
 :::
@@ -277,13 +322,18 @@ de purga (que en la UD1 se hará recorriendo un árbol de directorios).
 Implica: una validación que consulta una colección asociada antes de permitir la
 transición de estado.
 
-### R6 — Obligación de identificar al conductor
+### R6 — Coherencia del denunciante
 
-> La identificación del conductor es **obligatoria** para el titular del
-> vehículo; su omisión genera una **infracción autónoma muy grave**.
+> Según el `tipoDenunciante` de la `Denuncia`:
+>
+> - **`AGENTE`**: `identificadorAgente` es obligatorio; `radarId` y
+>   `velocidadMedida` deben ser nulos.
+> - **`RADAR`**: `radarId` y `velocidadMedida` son obligatorios;
+>   `identificadorAgente` debe ser nulo.
 
-Implica: un expediente puede generar otro expediente. Cuidado con las
-recursividades y con las referencias circulares al serializar.
+Implica: una validación que cruza varios campos de la misma entidad. Se puede
+reforzar en dos niveles: en la capa de servicio o con una validación a nivel de
+clase, y en la base de datos con una restricción `CHECK`.
 
 ## Fases del proyecto
 

@@ -228,16 +228,16 @@ pago y, en su caso, detracción de puntos.
 | Entidad | Descripción |
 |---------|-------------|
 | `Conductor` | Titular de permiso de conducción. NIF/NIE, nombre, domicilio, fecha de expedición, saldo de puntos. |
-| `PermisoConduccion` | Permiso asociado a un conductor, con sus clases (A, B, C…), fechas de validez y estado. |
+| `PermisoConduccion` | Permiso de una única clase (A, B, C…) asociado a un conductor, con sus propias fechas de validez y estado. Un conductor tiene un permiso por cada clase que posee. |
 | `Vehiculo` | Matrícula, marca, modelo, tipo, fecha de matriculación, estado de ITV. |
 | `Titularidad` | Relación temporal N:M entre `Conductor` y `Vehiculo` (fecha de alta y de baja). |
 | `Infraccion` | Catálogo normativo: código, artículo del Reglamento, descripción, importe base, puntos a detraer, gravedad (leve/grave/muy grave). |
-| `Denuncia` | Hecho denunciado: fecha y hora, lugar (con coordenadas), agente o dispositivo denunciante, infracción imputada, vehículo, conductor identificado (si lo hay). |
+| `Denuncia` | Hecho denunciado: fecha y hora, lugar (con coordenadas), tipo de denunciante (agente o radar), identificador del agente (si lo hay), velocidad medida (si la capta un radar), infracción imputada, vehículo, conductor identificado (si lo hay). |
 | `Expediente` | Tramitación administrativa de una denuncia: número de expediente, estado, importe, fechas del procedimiento. |
 | `Notificacion` | Intentos de notificación al interesado, con acuse y resultado. |
 | `Alegacion` | Escrito presentado por el interesado, con documentos adjuntos. |
-| `Resolucion` | Acto administrativo que pone fin al expediente: sanción firme, sobreseimiento o estimación de alegaciones. |
-| `Pago` | Abonos totales o parciales, con posible bonificación por pronto pago. |
+| `Resolucion` | Acto administrativo que pone fin al expediente: sanción o sobreseimiento (este último, entre otros motivos, cuando se estiman las alegaciones). |
+| `Pago` | Abono del importe del expediente, con posible bonificación por pronto pago. |
 | `Radar` | Dispositivo de captación automática: identificador, ubicación, tipo, límite de velocidad controlado. |
 
 **Reglas de negocio significativas** (fuente de complejidad para transacciones,
@@ -246,15 +246,16 @@ validaciones y consultas):
 - Bonificación del 50 % del importe si el pago se produce dentro de los 20 días
   naturales siguientes a la notificación, con renuncia a alegaciones.
 - La detracción de puntos sólo se materializa cuando la resolución es firme.
-- Un conductor con saldo de puntos igual a cero queda con el permiso suspendido:
-  la actualización de saldo y el cambio de estado del permiso deben ser
-  **atómicos**.
+- Un conductor con saldo de puntos igual a cero queda con todos sus
+  permisos suspendidos: la actualización de saldo y el cambio de estado de
+  cada uno de sus permisos deben ser **atómicos**.
 - Prescripción de la infracción a los 3 meses (leves) o 6 meses (graves y muy
   graves) desde la fecha de comisión si no se ha notificado.
 - Un expediente no puede resolverse mientras existan alegaciones pendientes de
   contestar.
-- La identificación del conductor es obligatoria para el titular del vehículo;
-  su omisión genera una infracción autónoma muy grave.
+- Un tipo de denunciante `AGENTE` exige identificador de agente y excluye radar
+  y velocidad medida; un tipo `RADAR` exige radar y velocidad medida y excluye
+  identificador de agente.
 
 ### 4.3. Arquitectura tecnológica: Spring Boot desde el primer día
 
@@ -588,8 +589,8 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
 - A5.3. Almacenamiento del **atestado y las circunstancias variables** de cada
   denuncia en una columna `JSONB`, con consultas por sus atributos internos e
   índice GIN.
-- A5.4. Uso de **arrays** para las clases de permiso de un conductor y consultas
-  con `ANY`/`@>`.
+- A5.4. Uso de **arrays** para los documentos adjuntos de una alegación
+  (`documentosAdjuntos`) y consultas con `ANY`/`@>`.
 - A5.5. Localización geoespacial de radares y denuncias: consulta de las
   denuncias producidas en un radio determinado en torno a un punto (PostGIS).
 - A5.6. Persistencia del mismo modelo en **ObjectDB**: objetos simples y
