@@ -167,23 +167,23 @@ núcleo estable. Compruébalo mirando los `import`.
 ### Tareas
 
 1. Define la interfaz `RepositorioExpedientes` en `repository`, con al menos:
-   `guardar`, `buscarPorId(UUID id)`, `buscarPorNumeroExpediente`,
+   `crear`, `actualizar`, `buscarPorId(UUID id)`, `buscarPorNumeroExpediente`,
    `buscarTodos` y `buscarPorEstado`.
 2. Implementa `RepositorioExpedientesMemoria` con un `ConcurrentHashMap`,
    anotada con `@Repository`. Es una implementación provisional: en la UD3 la
    sustituirá una JDBC **sin tocar la capa de servicio**.
 3. Crea `ServicioExpedientes` en `service`, con **inyección por constructor**,
    que ofrezca:
-   - `obtener(UUID id)` — lanza `ExpedienteNoEncontradoException` si no
+   - `obtener(String numeroExpediente)` — lanza `NoEncontradoException` si no
      existe.
-   - `registrar(Expediente e)` — asigna un `UUID` nuevo y rechaza un
+   - `registrar(ExpedienteRequest e)` — asigna un `UUID` nuevo y rechaza un
      `numeroExpediente` duplicado.
-   - `calcularImporteConBonificacion(Expediente e, LocalDate fechaPago)` —
+   - `calcularImporteConBonificacion(UUID expediente, LocalDate fechaPago)` —
      aplica la [regla R1](/tema-0/b-proyecto-multagal#r1--bonificación-por-pronto-pago):
      50 % si el pago se produce dentro de los 20 días naturales siguientes a la
      notificación.
 4. Crea la jerarquía inicial de excepciones en `domain/exception`:
-   `MultagalException` como raíz, y `ExpedienteNoEncontradoException` colgando
+   `MultagalException` como raíz, y `NoEncontradoException` y `YaExistenteException` colgando
    de ella.
 5. Escribe las pruebas unitarias de `ServicioExpedientes` con **Mockito**, sin
    contexto de Spring y sin base de datos. Cubre:
@@ -238,7 +238,7 @@ de entrada por anotaciones.
    constructor de `ServicioExpedientes`, y expón como mínimo:
    - `POST /api/expedientes` — crea un expediente a partir del DTO validado
      con `@Valid`. Responde `201 Created`.
-   - `GET /api/expedientes/{id}` (con `id` de tipo `UUID`) — devuelve el expediente o dispara la
+   - `GET /api/expediente/{numero}` (con `numero` de tipo `string`) — devuelve el expediente o dispara la
      excepción de «no encontrado».
 4. Crea un `@RestControllerAdvice` que traduzca:
    - los errores de validación del DTO a `400 Bad Request` con el detalle de

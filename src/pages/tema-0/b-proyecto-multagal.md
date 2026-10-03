@@ -221,7 +221,8 @@ modelarán como `enum` de Java; esta es la lista de valores válidos de cada uno
 | `TipoResolucion` | `Resolucion.tipo` | `SANCION`, `SOBRESEIMIENTO` |
 | `TipoPago` | `Pago.tipo` | `TOTAL`, `PRONTO_PAGO` |
 
-:::note[Pagos parciales]
+:::note
+[Pagos parciales]
 
 Por ahora el modelo de `Pago` **no contempla pagos parciales**: cada expediente
 se liquida con un único pago, total o con bonificación por pronto pago. Aun así
