@@ -445,7 +445,7 @@ respuesta correcta es **cero**.
 ## Ejemplo completo
 
 Así queda una vertical mínima, que es lo que construirás en la actividad
-[A0.4](/tema-0/i-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria).
+[A0.4](/tema-0/j-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria).
 
 ```java
 // domain/model/Libro.java

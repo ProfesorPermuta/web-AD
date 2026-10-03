@@ -234,7 +234,7 @@ está pasando**. Los necesitarás a partir de la UD3.
 ## Checklist de arranque
 
 Esta es la comprobación de la actividad
-[A0.1](/tema-0/i-actividades#a01--instalación-y-verificación-del-entorno).
+[A0.1](/tema-0/j-actividades#a01--instalación-y-verificación-del-entorno).
 Ejecuta todo y guarda la salida.
 
 ```bash

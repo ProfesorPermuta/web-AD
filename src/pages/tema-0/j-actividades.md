@@ -373,6 +373,6 @@ sobresaliente:
 - **Diagrama del dominio.** Elabora el diagrama entidad-relación completo de
   MULTAGAL e inclúyelo en el README. Te servirá de guía durante todo el curso.
 
-<NextPageButton to="/tema-0/j-chuleta-anotaciones">
+<NextPageButton to="/tema-0/k-chuleta-anotaciones">
 Chuleta de anotaciones: Lombok y Spring Framework
 </NextPageButton>

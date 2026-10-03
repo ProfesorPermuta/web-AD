@@ -30,8 +30,9 @@ const TEMAS: Tema[] = [
       {label: 'Inyección de dependencias', href: '/tema-0/f-inyeccion-dependencias'},
       {label: 'Controladores REST y validación de entrada', href: '/tema-0/g-controlador-rest-validacion'},
       {label: 'Flujo de trabajo con Git', href: '/tema-0/h-flujo-git'},
-      {label: 'Actividades', href: '/tema-0/i-actividades'},
-      {label: 'Chuleta de anotaciones: Lombok y Spring', href: '/tema-0/j-chuleta-anotaciones'}
+      {label: 'Flujo MVC de Spring Boot', href: '/tema-0/i-flujo-mvc'},
+      {label: 'Actividades', href: '/tema-0/j-actividades'},
+      {label: 'Chuleta de anotaciones: Lombok y Spring', href: '/tema-0/k-chuleta-anotaciones'}
     ],
   },
   {

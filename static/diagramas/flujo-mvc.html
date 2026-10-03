@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flujo MVC Spring Boot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+html{color-scheme:light}body{margin:0}
+.compact header{display:none}
+
+/* Layout: una calle principal izquierda-derecha (cliente → controlador → servicio → modelo → BD),
+   mapper debajo, ControllerAdvice encima, panel explicativo bajo el esquema. */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --fg:#15212C; --muted:#586676; --line:#A3AFBC; --on:#FFFFFF;
+  --cli:#4B5B6B; --ctrl:#0B7A85; --dto:#955700; --map:#A8407A; --svc:#4350B5; --mod:#2B8553; --adv:#C13F2E; --db:#7A5C2E;
+  --display:"Archivo",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1620; --surface:#17212D; --fg:#E6ECF2; --muted:#93A2B3; --line:#3A4A5C; --on:#0F1620;
+  --cli:#9DB0C4; --ctrl:#3FC1CC; --dto:#F0A93B; --map:#E27DB4; --svc:#8E98F2; --mod:#5CC98A; --adv:#FF7A66; --db:#D1A765; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1620; --surface:#17212D; --fg:#E6ECF2; --muted:#93A2B3; --line:#3A4A5C; --on:#0F1620;
+  --cli:#9DB0C4; --ctrl:#3FC1CC; --dto:#F0A93B; --map:#E27DB4; --svc:#8E98F2; --mod:#5CC98A; --adv:#FF7A66; --db:#D1A765; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);padding-inline:16px;padding-block:28px 40px}
+*{box-sizing:border-box}
+.wrap{max-width:1180px;margin-inline:auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-size:clamp(26px,4.2vw,42px);font-weight:800;margin:0 0 6px;letter-spacing:-.02em;text-wrap:balance}
+header p{margin:0;color:var(--muted);font-size:15px;line-height:1.5;max-width:68ch}
+.bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.seg,.ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button,select{font:600 13px var(--display);color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer}
+button:hover,select:hover{border-color:var(--fg)}
+button:focus-visible,select:focus-visible{outline:3px solid var(--ctrl);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+button.err[aria-pressed="true"]{background:var(--adv);border-color:var(--adv);color:var(--on)}
+.stage{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;overflow-x:auto}
+svg{display:block;width:100%;min-width:780px;height:auto}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.guide{fill:none;stroke:var(--line);stroke-width:1.6}
+.eguide{fill:none;stroke:var(--adv);stroke-width:2;stroke-dasharray:6 4;opacity:.6}#eguides.on .eguide{opacity:1}
+.lbl{font-size:9.5px;fill:var(--muted)}
+.node{opacity:.72;transition:opacity .3s}
+.node rect.box{fill:color-mix(in srgb,var(--c) 11%,var(--surface));stroke:var(--c);stroke-width:1.8;transition:stroke-width .25s,fill .25s}
+.node .t{font-family:var(--display);font-weight:800;font-size:15px}
+.node .s{font-size:10px;fill:var(--muted)}
+.node .st{font-size:10.5px;font-weight:600;fill:var(--c)}
+.node.on{opacity:1}
+.node.on rect.box{stroke-width:3.4;fill:color-mix(in srgb,var(--c) 24%,var(--surface))}
+.node.on{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--c) 55%,transparent))}
+.chip{opacity:.72;transition:opacity .3s}
+.chip rect{fill:color-mix(in srgb,var(--dto) 12%,var(--surface));stroke:var(--dto);stroke-width:1.6;stroke-dasharray:4 3}
+.chip text{font-size:11px;font-weight:600;fill:var(--dto)}
+.chip.on{opacity:1;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--dto) 60%,transparent))}
+.chip.on rect{stroke-dasharray:none;stroke-width:2.6}
+.cap{font-size:10px;letter-spacing:.08em;fill:var(--muted)}
+#trail{fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+#pkt rect{stroke:none}
+#pkt text{font-size:10.5px;font-weight:600;fill:var(--on);text-anchor:middle}
+#pkt{filter:drop-shadow(0 2px 4px rgb(0 0 0 / .3))}
+#pkt.pop{animation:pop .5s ease-out}
+@keyframes pop{0%{opacity:0}40%{opacity:1}}
+.k-json{--k:var(--cli)} .k-dto{--k:var(--dto)} .k-ent{--k:var(--mod)} .k-sql{--k:var(--db)} .k-err{--k:var(--adv)}
+#pkt rect{fill:var(--k)} #trail{stroke:var(--k)}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.badge{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c,var(--muted))}
+.card h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.card p{margin:0;line-height:1.55;font-size:15px;max-width:62ch}
+.io{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font:500 12px var(--mono)}
+.io span{padding:4px 8px;border-radius:4px;border:1.5px solid var(--line)}
+.io b{color:var(--muted);font-weight:500}
+pre{margin:0;font:400 12.5px/1.6 var(--mono);overflow-x:auto;white-space:pre;padding:14px;background:var(--bg);border-radius:6px;border:1px solid var(--line)}
+.codehead{font:600 11px var(--mono);color:var(--muted);letter-spacing:.06em}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.steps button{width:36px;height:36px;padding:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.steps button[aria-current="step"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.steps button.done{border-color:var(--ctrl)}
+.legend{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+@media (prefers-reduced-motion:reduce){#pkt.pop{animation:none}.node,.chip{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>El viaje de una petición por Spring Boot</h1>
+    <p>Sigue un POST a <code>/api/expedientes</code> desde el usuario hasta la base de datos y de vuelta. En cada parada verás qué hace la capa con el dato y en qué forma lo recibe y lo entrega.</p>
+  </header>
+
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Escenario">
+      <button id="mOk" aria-pressed="true">Camino correcto</button>
+      <button id="mErr" class="err" aria-pressed="false">Camino con error</button>
+    </div>
+    <div class="ctl">
+      <button id="bPrev">Anterior</button>
+      <button id="bPlay">Pausar</button>
+      <button id="bNext">Siguiente</button>
+      <select id="sSpeed" aria-label="Velocidad"><option value="0.6">Lenta</option><option value="1" selected>Normal</option><option value="1.8">Rápida</option></select>
+    </div>
+  </div>
+
+  <div class="stage">
+    <svg id="svg" viewBox="0 225 1120 330" role="img" aria-label="Diagrama MVC de Spring Boot: el cliente envía una petición al controlador, que usa el mapper para convertir el DTO en entidad, el servicio aplica reglas, el repositorio guarda en la base de datos y la respuesta vuelve convertida en DTO. Si hay error, el ControllerAdvice lo traduce.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9z" fill="var(--line)"/></marker>
+        <marker id="are" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9z" fill="var(--adv)"/></marker>
+      </defs>
+      <g id="guides"></g>
+      <g id="eguides"></g>
+      <text class="cap" x="475" y="243" text-anchor="middle">DTOs</text>
+      <g class="chip" id="chReq"><rect x="400" y="252" width="150" height="38" rx="6"/><text x="475" y="276" text-anchor="middle">RequestDTO</text></g>
+      <g class="chip" id="chRes"><rect x="400" y="298" width="150" height="38" rx="6"/><text x="475" y="322" text-anchor="middle">ResponseDTO</text></g>
+      <g id="nodes"></g>
+      <text class="lbl" x="192" y="277" text-anchor="middle">HTTP</text>
+      <text class="lbl" x="192" y="333" text-anchor="middle">201</text>
+      <text class="lbl" x="478" y="368" text-anchor="middle">service.crear(req)</text>
+      <text class="lbl" x="765" y="272" text-anchor="middle">save()</text>
+      <text class="lbl" x="962" y="272" text-anchor="middle">SQL</text>
+      <text class="lbl" x="628" y="395" text-anchor="end">toEntity() · toResponse()</text>
+      <text class="lbl" x="702" y="395">entidad / DTO</text>
+      <path id="trk" d="M0 0" fill="none" stroke="none"/>
+      <path id="trail" d="M0 0"/>
+      <g id="pkt"><rect height="22" rx="11" y="-11"/><text y="3.5"></text></g>
+    </svg>
+  </div>
+
+  <div class="legend" aria-label="Leyenda">
+    <span><i style="background:var(--cli)"></i>JSON / HTTP</span>
+    <span><i style="background:var(--dto)"></i>DTO</span>
+    <span><i style="background:var(--mod)"></i>Entidad</span>
+    <span><i style="background:var(--db)"></i>SQL</span>
+    <span><i style="background:var(--adv)"></i>Excepción y error</span>
+  </div>
+
+  <div class="steps" id="steps" role="group" aria-label="Pasos"></div>
+
+  <div class="grid">
+    <div class="card" id="info">
+      <span class="badge" id="iBadge"></span>
+      <h2 id="iTitle"></h2>
+      <p id="iBody"></p>
+      <div class="io"><b>Recibe</b><span id="iIn"></span><b>Entrega</b><span id="iOut"></span></div>
+    </div>
+    <div class="card">
+      <span class="codehead" id="cHead"></span>
+      <pre id="cCode"></pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---- nodos ---- */
+const N={
+  cli:{x:20,y:250,w:150,h:90,c:"--cli",t:"Usuario",s:"navegador / app"},
+  ctrl:{x:215,y:250,w:150,h:90,c:"--ctrl",t:"Controlador",s:"@RestController"},
+  svc:{x:590,y:250,w:150,h:90,c:"--svc",t:"Servicio",s:"@Service"},
+  mod:{x:790,y:250,w:150,h:90,c:"--mod",t:"Modelo",s:"@Entity + Repository"},
+  db:{x:985,y:250,w:100,h:90,c:"--db",t:"BD",s:"PostgreSQL"},
+  map:{x:590,y:440,w:150,h:100,c:"--map",t:"Mapper",s:"@Component"},
+  adv:{x:117,y:400,w:150,h:90,c:"--adv",t:"ControllerAdvice",s:"@RestControllerAdvice"}
+};
+const nodesG=$("nodes");
+for(const k in N){
+  const n=N[k],g=document.createElementNS(NS,"g");
+  g.setAttribute("class","node");g.setAttribute("style","--c:var("+n.c+")");g.id="n_"+k;
+  const cx=n.x+n.w/2;
+  g.innerHTML='<rect class="box" x="'+n.x+'" y="'+n.y+'" width="'+n.w+'" height="'+n.h+'" rx="8"/>'
+   +'<text class="t" x="'+cx+'" y="'+(n.y+28)+'" text-anchor="middle">'+n.t+'</text>'
+   +'<text class="s" x="'+cx+'" y="'+(n.y+46)+'" text-anchor="middle">'+n.s+'</text>'
+   +'<text class="st" x="'+cx+'" y="'+(n.y+n.h-16)+'" text-anchor="middle"></text>';
+  nodesG.appendChild(g);
+}
+
+/* ---- guías ---- */
+const G=["M170 285H215","M365 285H590","M590 315H365","M640 340V440","M690 440V340","M740 280H790","M940 280H985","M985 310H940","M790 310H740","M215 315H170"];
+const E=["M240 340V400","M117 445H95V340"];
+function guides(list,id,m,cls){const g=$(id);list.forEach(d=>{const p=document.createElementNS(NS,"path");p.setAttribute("d",d);p.setAttribute("class",cls);p.setAttribute("marker-end","url(#"+m+")");g.appendChild(p)})}
+guides(G,"guides","ar","guide");guides(E,"eguides","are","eguide");
+
+/* ---- pasos ---- */
+const P={
+ s2:"M120 285H290", s3:"M290 285H665", s4:"M665 285H640V490", s5:"M640 490H690V300",
+ s6:"M690 300V280H865", s7:"M865 280H1035", s8:"M1035 280V310H665", s9:"M665 310H640V490",
+ s10:"M640 490H690V300", s11:"M690 300V315H290", s12:"M290 315H120", e4:"M665 285V315H300", e5:"M300 315H240V445H192", e7:"M192 445H95V300"
+};
+const common=[
+ {at:[120,285],label:"JSON",kind:"json",dest:["cli"],status:"POST /api/expedientes",badge:"Usuario",
+  title:"El usuario envía la petición",
+  body:"Desde el navegador o una app se manda un POST con los datos del expediente en formato JSON. Todavía no es un objeto Java, solo texto que viaja por HTTP.",
+  inp:"formulario",out:"JSON",ch:"POST /api/expedientes · HTTP",
+  code:'POST /api/expedientes HTTP/1.1\nContent-Type: application/json\n\n{\n  "matricula": "1234 ABC",\n  "infraccionId": 7,\n  "conductorDni": "12345678Z",\n  "importe": 200.0\n}'},
+ {path:P.s2,label:"JSON",kind:"json",dest:["ctrl"],chips:["chReq"],status:"deserializa + valida",badge:"Controlador",
+  title:"El controlador recibe y valida",
+  body:"Spring enruta la petición al método con @PostMapping. Jackson convierte el JSON en un RequestDTO y @Valid comprueba el formato de los campos. El controlador no crea ni modifica nada del dominio.",
+  inp:"JSON",out:"RequestDTO",ch:"CrearExpedienteRequest.java",
+  code:'public record CrearExpedienteRequest(\n  @NotBlank String matricula,\n  @NotNull  Long infraccionId,\n  @NotBlank String conductorDni,\n  @Positive BigDecimal importe) {}'},
+ {path:P.s3,label:"RequestDTO",kind:"dto",dest:["svc"],chips:["chReq"],status:"comprueba reglas",badge:"Servicio",
+  title:"El controlador delega en el servicio",
+  body:"El controlador entrega el RequestDTO tal cual. El servicio, que es quien conoce las reglas del negocio, empieza comprobando que no exista ya un expediente para esa matrícula e infracción.",
+  inp:"RequestDTO",out:"RequestDTO validado",ch:"ExpedienteController.java",
+  code:'@PostMapping\nResponseEntity<ExpedienteResponse> crear(\n    @Valid @RequestBody CrearExpedienteRequest req) {\n\n  ExpedienteResponse res = service.crear(req);\n  return ResponseEntity.created(uri(res.id())).body(res);\n}'},
+ {path:P.s4,label:"RequestDTO",kind:"dto",dest:["map"],chips:["chReq"],status:"copia los campos",badge:"Mapper",
+  title:"El servicio pide al mapper los datos base",
+  body:"El servicio no copia campo a campo. Le pasa el RequestDTO al mapper, que construye una entidad con los datos que vienen de la petición y nada más.",
+  inp:"RequestDTO",out:"Entidad parcial",ch:"ExpedienteMapper.java",
+  code:'@Component\nclass ExpedienteMapper {\n  Expediente toEntity(CrearExpedienteRequest r) {\n    return Expediente.builder()\n        .matricula(r.matricula())\n        .importe(r.importe())\n        .build();\n  }\n}'}
+];
+const tail=[
+ {path:P.s5,label:"Expediente",kind:"ent",dest:["svc"],status:"completa atributos",badge:"Servicio",
+  title:"El servicio completa la entidad",
+  body:"La entidad vuelve sin estado ni fechas porque eso no lo decide el cliente. El servicio fija los atributos que dicta la lógica de negocio: estado inicial, fecha de apertura, plazos.",
+  inp:"Entidad parcial",out:"Entidad completa",ch:"ExpedienteService.java",
+  code:'@Service @Transactional\npublic ExpedienteResponse crear(CrearExpedienteRequest req) {\n  if (repo.existsByMatriculaAndInfraccionId(\n        req.matricula(), req.infraccionId()))\n    throw new ExpedienteDuplicadoException(req.matricula());\n\n  Expediente e = mapper.toEntity(req);\n  e.setEstado(EstadoExpediente.ABIERTO);\n  e.setFechaApertura(LocalDate.now());\n  ...'},
+ {path:P.s6,label:"Expediente",kind:"ent",dest:["mod"],status:"mapea a tabla",badge:"Modelo",
+  title:"El modelo se convierte en fila",
+  body:"La entidad lleva las anotaciones JPA que describen la tabla. Al llamar a repo.save(), el repositorio se la entrega a Hibernate, que decide cómo guardarla.",
+  inp:"Entidad completa",out:"Sentencia SQL",ch:"Expediente.java",
+  code:'@Entity @Table(name = "expediente")\nclass Expediente {\n  @Id @GeneratedValue Long id;\n  String matricula;\n  BigDecimal importe;\n  @Enumerated(EnumType.STRING)\n  EstadoExpediente estado;\n  LocalDate fechaApertura;\n}'},
+ {path:P.s7,label:"INSERT",kind:"sql",dest:["db"],status:"persiste",badge:"Base de datos",
+  title:"La base de datos guarda el registro",
+  body:"Hibernate ejecuta el INSERT dentro de la transacción. La base genera el identificador y confirma el guardado.",
+  inp:"SQL",out:"fila + id",ch:"SQL ejecutado",
+  code:"INSERT INTO expediente\n  (matricula, importe, estado, fecha_apertura)\nVALUES\n  ('1234 ABC', 200.00, 'ABIERTO', '2026-10-03');\n\n-- id generado: 42"},
+ {path:P.s8,label:"Expediente #42",kind:"ent",dest:["svc"],status:"entidad con id",badge:"Servicio",
+  title:"La entidad guardada vuelve al servicio",
+  body:"Sube por el repositorio con su id ya asignado. El servicio sigue dentro de la transacción y todavía tiene que decidir qué devuelve al exterior.",
+  inp:"fila + id",out:"Entidad con id",ch:"Resultado de repo.save()",
+  code:"Expediente{\n  id=42,\n  matricula='1234 ABC',\n  importe=200.00,\n  estado=ABIERTO,\n  fechaApertura=2026-10-03\n}"},
+ {path:P.s9,label:"Expediente #42",kind:"ent",dest:["map"],chips:["chRes"],status:"entidad → DTO",badge:"Mapper",
+  title:"El mapper construye la respuesta",
+  body:"Ahora actúa en sentido contrario: elige los campos que verá el cliente y los copia a un ResponseDTO. La entidad no sale del servicio.",
+  inp:"Entidad",out:"ResponseDTO",ch:"ExpedienteMapper.java",
+  code:'ExpedienteResponse toResponse(Expediente e) {\n  return new ExpedienteResponse(\n      e.getId(),\n      e.getMatricula(),\n      e.getEstado().name(),\n      e.getFechaApertura());\n}'},
+ {path:P.s10,label:"ResponseDTO",kind:"dto",dest:["svc"],chips:["chRes"],status:"cierra transacción",badge:"Servicio",
+  title:"El servicio devuelve un DTO",
+  body:"Termina el método: se confirma la transacción y devuelve el ResponseDTO. Hacia arriba solo viajan DTOs, nunca entidades.",
+  inp:"ResponseDTO",out:"ResponseDTO",ch:"ExpedienteService.java",
+  code:'  ...\n  Expediente guardado = repo.save(e);\n  return mapper.toResponse(guardado);\n}'},
+ {path:P.s11,label:"ResponseDTO",kind:"dto",dest:["ctrl"],chips:["chRes"],status:"arma 201 Created",badge:"Controlador",
+  title:"El controlador arma la respuesta HTTP",
+  body:"Con el DTO en la mano solo elige el código de estado y la cabecera Location. Spring serializa el objeto a JSON automáticamente.",
+  inp:"ResponseDTO",out:"ResponseEntity",ch:"ExpedienteController.java",
+  code:'return ResponseEntity\n    .created(URI.create("/api/expedientes/" + res.id()))\n    .body(res);'},
+ {path:P.s12,label:"JSON",kind:"json",dest:["cli"],status:"recibe 201",badge:"Usuario",
+  title:"El usuario recibe la respuesta",
+  body:"El viaje termina con un 201 Created y el JSON del expediente, con el id que acaba de asignarse. Ninguna clase interna del sistema ha salido a la calle.",
+  inp:"JSON",out:"pantalla",ch:"HTTP · respuesta",
+  code:'HTTP/1.1 201 Created\nLocation: /api/expedientes/42\nContent-Type: application/json\n\n{\n  "id": 42,\n  "matricula": "1234 ABC",\n  "estado": "ABIERTO",\n  "fechaApertura": "2026-10-03"\n}'}
+];
+const ok=common.concat(tail);
+const bad=common.slice(0,3).concat([
+ {path:P.e4,label:"Excepción",kind:"err",dest:["ctrl"],status:"no la captura",badge:"Controlador",
+  title:"La excepción sube por el controlador",
+  body:"El expediente ya existía. El servicio lanza ExpedienteDuplicadoException antes de crear nada y la transacción se revierte. Ni el servicio ni el controlador tienen un try/catch: la excepción atraviesa el controlador camino de la respuesta.",
+  inp:"RuntimeException",out:"RuntimeException",ch:"ExpedienteService.java",
+  code:'throw new ExpedienteDuplicadoException("1234 ABC");\n\n// el controlador no la captura:\n//   Servicio → Controlador → DispatcherServlet'},
+ {path:P.e5,label:"Excepción",kind:"err",dest:["adv"],status:"intercepta",badge:"ControllerAdvice",
+  title:"El ControllerAdvice la intercepta en la vuelta",
+  body:"Antes de que nada llegue al usuario, Spring busca un método @ExceptionHandler para ese tipo de excepción y lo encuentra en el ControllerAdvice. Solo interviene cuando algo ha fallado.",
+  inp:"Excepción",out:"decisión de respuesta",ch:"GlobalExceptionHandler.java",
+  code:'@RestControllerAdvice\nclass GlobalExceptionHandler {\n  @ExceptionHandler(ExpedienteDuplicadoException.class)\n  ResponseEntity<ErrorResponse> duplicado(\n        ExpedienteDuplicadoException ex) { ... }\n}'},
+ {at:[192,445],label:"ErrorResponse",kind:"dto",dest:["adv"],status:"excepción → DTO",badge:"ControllerAdvice",
+  title:"Convierte la excepción en un DTO de error",
+  body:"Un único sitio decide cómo se ve cada error: código HTTP, mensaje y fecha. Los controladores se quedan limpios, sin bloques try/catch repetidos.",
+  inp:"Excepción",out:"ErrorResponse",ch:"GlobalExceptionHandler.java",
+  code:'    return ResponseEntity.status(409)\n        .body(new ErrorResponse(409, ex.getMessage()));'},
+ {path:P.e7,label:"JSON",kind:"err",dest:["cli"],status:"recibe 409",badge:"Usuario",
+  title:"El usuario recibe un error claro",
+  body:"El cliente obtiene un 409 Conflict con un JSON de error que la interfaz puede mostrar tal cual. Es la misma forma para cualquier error de la API.",
+  inp:"ErrorResponse",out:"mensaje en pantalla",ch:"HTTP · respuesta",
+  code:'HTTP/1.1 409 Conflict\nContent-Type: application/json\n\n{\n  "estado": 409,\n  "mensaje": "Ya existe un expediente para 1234 ABC",\n  "fecha": "2026-10-03T10:15:00"\n}'}
+]);
+
+/* ---- motor ---- */
+const pkt=$("pkt"),trk=$("trk"),trail=$("trail");
+let mode="ok",steps=ok,i=0,playing=true,raf=0,timer=0,speed=1,pos=[120,285];
+
+function setPkt(x,y){pkt.setAttribute("transform","translate("+x+" "+y+")")}
+function setLabel(t,kind){
+  const tx=pkt.querySelector("text"),r=pkt.querySelector("rect");
+  tx.textContent=t;const w=t.length*6.4+22;
+  r.setAttribute("width",w);r.setAttribute("x",-w/2);
+  pkt.setAttribute("class","k-"+kind);
+}
+function clearActive(){
+  document.querySelectorAll(".node.on,.chip.on").forEach(e=>e.classList.remove("on"));
+  document.querySelectorAll(".node .st").forEach(e=>e.textContent="");
+}
+function arrive(s){
+  clearActive();
+  s.dest.forEach(d=>{const n=$("n_"+d);n.classList.add("on");n.querySelector(".st").textContent=s.status});
+  (s.chips||[]).forEach(c=>$(c).classList.add("on"));
+}
+function info(s){
+  $("iBadge").textContent="Paso "+(i+1)+" de "+steps.length+" · "+s.badge;
+  $("iBadge").setAttribute("style","--c:var("+N[s.dest[0]].c+")");
+  $("iTitle").textContent=s.title;$("iBody").textContent=s.body;
+  $("iIn").textContent=s.inp;$("iOut").textContent=s.out;
+  $("cHead").textContent=s.ch;$("cCode").textContent=s.code;
+  document.querySelectorAll("#steps button").forEach((b,j)=>{
+    b.toggleAttribute("aria-current",j===i);if(j===i)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");
+    b.classList.toggle("done",j<i);
+  });
+}
+function stop(){cancelAnimationFrame(raf);clearTimeout(timer)}
+function show(n){
+  stop();i=(n+steps.length)%steps.length;
+  const s=steps[i];info(s);clearActive();setLabel(s.label,s.kind);
+  const hold=()=>{arrive(s);if(playing)timer=setTimeout(()=>show(i+1),(i===steps.length-1?4200:3600)/speed)};
+  if(!s.path){
+    trail.setAttribute("d","M0 0");pos=s.at||pos;setPkt(pos[0],pos[1]);
+    pkt.classList.remove("pop");void pkt.getBoundingClientRect();if(!reduce)pkt.classList.add("pop");
+    timer=setTimeout(hold,reduce?0:500/speed);return;
+  }
+  trk.setAttribute("d",s.path);trail.setAttribute("d",s.path);
+  const L=trk.getTotalLength(),dur=reduce?0:Math.max(900,L*3.1)/speed;
+  trail.style.strokeDasharray=L;trail.setAttribute("class","");
+  trail.setAttribute("style","--k:var(--"+({json:"cli",dto:"dto",ent:"mod",sql:"db",err:"adv"})[s.kind]+");stroke-dasharray:"+L);
+  const t0=performance.now();
+  (function f(now){
+    let t=dur?Math.min(1,(now-t0)/dur):1;const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    const p=trk.getPointAtLength(L*e);setPkt(p.x,p.y);trail.style.strokeDashoffset=L*(1-e);
+    if(t<1)raf=requestAnimationFrame(f);else{pos=[p.x,p.y];hold()}
+  })(t0);
+}
+function build(){
+  const box=$("steps");box.innerHTML="";
+  steps.forEach((s,j)=>{const b=document.createElement("button");b.textContent=j+1;b.setAttribute("aria-label","Paso "+(j+1)+": "+s.title);b.onclick=()=>show(j);box.appendChild(b)});
+}
+function setMode(m){
+  mode=m;steps=m==="ok"?ok:bad;
+  $("mOk").setAttribute("aria-pressed",m==="ok");$("mErr").setAttribute("aria-pressed",m==="err");
+  $("eguides").classList.toggle("on",m==="err");build();show(0);
+}
+$("mOk").onclick=()=>setMode("ok");$("mErr").onclick=()=>setMode("err");
+$("bPrev").onclick=()=>show(i-1);$("bNext").onclick=()=>show(i+1);
+$("bPlay").onclick=()=>{playing=!playing;$("bPlay").textContent=playing?"Pausar":"Reproducir";if(playing)show(i)};
+$("sSpeed").onchange=e=>{speed=+e.target.value;show(i)};
+setMode("ok");
+})();
+</script>
+<script>
+/* Integración con Docusaurus: tema, modo compacto y altura automática */
+(function(){
+  var root=document.documentElement,q=new URLSearchParams(location.search);
+  function theme(t){if(t==="dark"||t==="light")root.setAttribute("data-theme",t)}
+  theme(q.get("theme"));
+  if(q.get("compact")==="1")document.body.classList.add("compact");
+  try{ /* mismo origen: copia el tema de Docusaurus y lo sigue */
+    var pr=window.parent.document.documentElement;
+    if(window.parent!==window){
+      theme(pr.getAttribute("data-theme"));
+      new MutationObserver(function(){theme(pr.getAttribute("data-theme"))}).observe(pr,{attributes:true,attributeFilter:["data-theme"]});
+    }
+  }catch(e){}
+  function h(){parent.postMessage({type:"flujo-mvc-height",height:document.documentElement.scrollHeight},"*")}
+  if(window.parent!==window){new ResizeObserver(h).observe(document.body);addEventListener("load",h)}
+})();
+</script>
+
+
+</body>
+</html>

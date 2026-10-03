@@ -377,7 +377,7 @@ entregables descritas en la [presentación del módulo](/tema-0/a-presentacion-m
 
 ## Un primer esbozo del modelo
 
-En la actividad [A0.3](/tema-0/i-actividades) crearás los primeros POJOs del
+En la actividad [A0.3](/tema-0/j-actividades) crearás los primeros POJOs del
 dominio. Todavía sin persistencia: sólo tipos Java que representen los
 conceptos. Un adelanto del criterio a seguir:
 

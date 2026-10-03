@@ -226,8 +226,9 @@ dominio esbozado y el repositorio publicado.
 | [f](/tema-0/f-inyeccion-dependencias) | IoC, inyección de dependencias y arquitectura en capas |
 | [g](/tema-0/g-controlador-rest-validacion) | Controladores REST y validación de entrada |
 | [h](/tema-0/h-flujo-git) | Flujo de trabajo con Git |
-| [i](/tema-0/i-actividades) | Actividades A0.1 – A0.6 |
-| [j](/tema-0/j-chuleta-anotaciones) | Chuleta de anotaciones: Lombok y Spring Framework |
+| [i](/tema-0/i-flujo-mvc) | Flujo MVC de Spring Boot |
+| [j](/tema-0/j-actividades) | Actividades A0.1 – A0.6 |
+| [k](/tema-0/k-chuleta-anotaciones) | Chuleta de anotaciones: Lombok y Spring Framework |
 
 <NextPageButton to="/tema-0/b-proyecto-multagal">
 El proyecto MULTAGAL

@@ -311,7 +311,7 @@ debe, decidir si un NIF/NIE ya existe, si un ISBN está duplicado
 o si un socio tiene ya un préstamo vencido. Esas comprobaciones viven en
 el `service`, exactamente igual que la validación de negocio que ya
 implementaste en la actividad
-[A0.4](/tema-0/i-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria)
+[A0.4](/tema-0/j-actividades#a04--primer-servicio-inyectado-y-su-prueba-unitaria)
 para el número de expediente duplicado.
 
 ```java

@@ -388,6 +388,6 @@ contraseñas**. Estén o no en el último commit, siguen en el historial.
 
 :::
 
-<NextPageButton to="/tema-0/i-actividades">
-Actividades de la unidad
+<NextPageButton to="/tema-0/i-flujo-mvc">
+Flujo MVC de Spring Boot
 </NextPageButton>
