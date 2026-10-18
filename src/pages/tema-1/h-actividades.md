@@ -23,41 +23,90 @@ una rama `hito/ud1-ficheros` fusionada en `main`. Evalúa **RA1**.
 ## A1.1 — Componente `AlmacenExpedientes`
 
 **Objetivo:** organizar el archivado de expedientes en una estructura de
-directorios jerárquica y predecible.
+directorios jerárquica y predecible, guardando cada expediente como un
+documento de texto legible, con el aspecto de la notificación que recibiría
+la persona expedientada.
 
 ### Tareas
 
 1. Diseña la jerarquía de directorios `expedientes/<año>/<mes>/<provincia>/`
    a partir de la fecha del expediente y la provincia de la denuncia, usando
    `Path` y `Files.createDirectories` según el
-   [apartado b](/tema-1/b-path-files).
-2. Implementa `AlmacenExpedientes` con al menos:
-   - `archivar(Expediente expediente)` — calcula la ruta jerárquica y
-     escribe el expediente serializado en su interior.
+   [apartado b](/tema-1/b-path-files). Cada expediente se guarda en un
+   fichero `<numeroExpediente>.txt`.
+2. Crea una **plantilla de texto externa** (por ejemplo
+   `src/main/resources/plantillas/expediente.txt`) con el formato de la
+   notificación y marcadores de `String.format` (`%s`, `%n`, o mejor
+   posicionales como `%1$s`) donde irán los datos. El código Java no debe
+   contener el texto del documento. Ejemplo orientativo:
+
+   ```text
+   ==============================================================
+     NOTIFICACIÓN DE EXPEDIENTE SANCIONADOR
+   ==============================================================
+   Expediente:        %1$s
+   Fecha de incoación: %2$s
+   Estado:            %3$s
+   Instructor:        %4$s
+
+   DATOS DEL DENUNCIADO
+     Nombre:          %5$s
+     Matrícula:       %6$s
+
+   HECHOS DENUNCIADOS
+     Lugar:           %7$s (%8$s)
+     Infracción:      %9$s
+     Importe:         %10$.2f €
+
+   Dispone de 20 días hábiles para presentar alegaciones.
+   ==============================================================
+   ```
+
+   Carga la plantilla una sola vez (con `Files.readString` o desde el
+   classpath) y rellénala con `String.format` o `formatted(...)`, fijando un
+   `Locale` explícito para fechas e importes.
+3. Implementa `AlmacenExpedientes` con al menos:
+   - `archivar(Expediente expediente)` — calcula la ruta jerárquica, genera
+     el texto a partir de la plantilla y lo escribe en su interior con
+     `Files.writeString` (codificación UTF-8 explícita).
    - `buscar(String numeroExpediente)` — localiza el fichero
-     correspondiente sin necesidad de conocer de antemano año, mes o
-     provincia.
+     correspondiente (`<numeroExpediente>.txt`) sin necesidad de conocer de
+     antemano año, mes o provincia.
    - `mover(String numeroExpediente, EstadoExpediente nuevoEstado)` — cuando
      el estado cambie, mueve el fichero a una subcarpeta que refleje el
      estado actual (por ejemplo, separando `activos/` de `resueltos/`).
-3. Usa `Files.exists`, `Files.createDirectories` y `Files.move` con la
+4. Al cambiar el estado en `mover`, el contenido del documento debe
+   reflejar el nuevo estado: regenera el texto desde la plantilla (no
+   edites el fichero a base de reemplazos sobre el texto).
+5. Usa `Files.exists`, `Files.createDirectories` y `Files.move` con la
    opción adecuada para no perder datos si el destino ya existe.
-4. Externaliza el directorio raíz de archivado (`expedientes/`) mediante
-   `@ConfigurationProperties`, según el
+6. Externaliza mediante `@ConfigurationProperties` tanto el directorio raíz
+   de archivado (`expedientes/`) como la ubicación de la plantilla, según el
    [apartado f](/tema-1/f-excepciones-config#gestión-de-rutas-por-configuración).
-5. Expón `AlmacenExpedientes` a través de un `ExpedienteController` con, como
-   mínimo, `GET /expedientes/{numero}/archivo` (devuelve dónde está
-   archivado el expediente o 404 si no existe) y
-   `POST /expedientes/{numero}/estado` (invoca `mover` con el nuevo estado
-   recibido). El controlador delega toda la lógica en el servicio: no
-   accede él mismo al sistema de ficheros.
+7. Expón `AlmacenExpedientes` a través de un `ExpedienteController` con, como
+   mínimo:
+   - `GET /expedientes/{numero}/archivo` — devuelve el contenido del
+     documento archivado como `text/plain; charset=UTF-8`, de modo que el
+     navegador lo muestre directamente (404 si no existe).
+   - `POST /expedientes/{numero}/estado` — invoca `mover` con el nuevo
+     estado recibido.
+
+   El controlador delega toda la lógica en el servicio: no accede él mismo
+   al sistema de ficheros. Ninguna respuesta debe exponer la ruta física
+   del servidor.
 
 ### Entregable
 
-Clase `AlmacenExpedientes` en el paquete de repositorio del proyecto, con
+Clase `AlmacenExpedientes`, la plantilla de texto del expediente, con
 pruebas unitarias sobre un directorio temporal (no sobre rutas reales de tu
-disco), y `ExpedienteController` con sus endpoints probados con
-`MockMvc` o pruebas de integración equivalentes.
+disco) que comprueben también el contenido generado, y
+`ExpedienteController` con sus endpoints probados con `MockMvc` o pruebas de
+integración equivalentes.
+
+Un ADR que justifique en qué capa del proyecto (`controller`, `service`,
+`repository`...) has colocado `AlmacenExpedientes` y, si lo separas, la
+generación del texto desde la plantilla, y por qué descartaste las demás
+([apartado f del tema 0](/tema-0/f-inyeccion-dependencias#la-regla-de-dependencia)).
 
 ### Criterios de aceptación
 
@@ -68,8 +117,12 @@ disco), y `ExpedienteController` con sus endpoints probados con
 | 3 | `buscar` localiza un expediente sin recorrer manualmente todo el árbol a mano en el código cliente |
 | 4 | El directorio raíz de archivado es configurable, no está escrito en el código |
 | 5 | Las pruebas usan un directorio temporal y lo limpian al terminar |
-| 6 | Los endpoints del controlador devuelven el código HTTP correcto en el caso favorable y en el expediente no encontrado |
-| 7 | El controlador no contiene lógica de acceso a ficheros: solo delega en `AlmacenExpedientes` |
+| 6 | Los endpoints del controlador devuelven el código HTTP correcto en el caso favorable y en el expediente no encontrado || 7 | El controlador no contiene lógica de acceso a ficheros: solo delega en `AlmacenExpedientes` |
+| 8 | El formato del documento está en un fichero de plantilla externo; el código solo aporta los datos mediante `String.format` |
+| 9 | El `.txt` generado contiene todos los datos del expediente, correctamente formateados (fechas, importe con dos decimales) y en UTF-8 |
+| 10 | Tras `mover`, el documento archivado muestra el nuevo estado |
+| 11 | El ADR indica en qué capa se ha colocado cada componente y justifica la elección frente a las alternativas, de acuerdo con la regla de dependencia |
+| 12 | `GET .../archivo` responde con el texto del expediente y `Content-Type: text/plain; charset=UTF-8`, o `404` si no existe; ninguna respuesta expone la ruta física del servidor |
 
 :::tip
 Java ofrece `Files.createTempDirectory` para crear un directorio temporal
@@ -90,7 +143,11 @@ paralelas.
    A1.1 con `Files.walk` o `Files.walkFileTree`
    ([apartado c](/tema-1/c-recorrido-arboles)) y localice los expedientes
    cuya fecha de comisión supere el plazo de prescripción según su
-   gravedad (3 meses leves, 6 meses graves y muy graves).
+   gravedad (3 meses leves, 6 meses graves y muy graves). Como los
+   expedientes se archivan en formato de texto (A1.1), la fecha y la
+   gravedad se obtienen leyendo las líneas correspondientes del `.txt`
+   (por ejemplo con `Files.readAllLines`), o bien añadiéndolas como campos
+   fácilmente localizables en la plantilla.
 2. Filtra los ficheros candidatos con un `PathMatcher` o con el propio
    `Stream` antes de decidir si un expediente debe purgarse.
 3. Antes de borrar un directorio de mes/provincia que quede vacío tras la

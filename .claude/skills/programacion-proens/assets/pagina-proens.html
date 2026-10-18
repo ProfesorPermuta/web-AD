@@ -1,0 +1,621 @@
+<title>__TITLE__</title>
+<style>
+:root{
+  --bg:#faf9f7; --surface:#ffffff; --border:#e2ddd3;
+  --text:#2b2620; --text-dim:#6b6255;
+  --accent:#8a5a3b; --accent-soft:#f1e6db;
+  --head-bg:#2b2620; --head-text:#faf9f7;
+  --row-alt:#f4f1ec;
+  --check-bg:#8a5a3b; --check-border:#c9a688;
+  --group-band:#efe8dd;
+  --ud-band:#efe8dd;
+  --sans:"Inter",-apple-system,Segoe UI,sans-serif;
+  --serif:"Source Serif 4",Georgia,serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --surface:#242019; --border:#3a342c;
+    --text:#eee8dd; --text-dim:#a89d8c;
+    --accent:#d3996a; --accent-soft:#332a20;
+    --head-bg:#100e0b; --head-text:#eee8dd;
+    --row-alt:#221e18; --check-bg:#d3996a; --check-border:#6b5540;
+    --group-band:#2a2419; --ud-band:#2a2419;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --surface:#242019; --border:#3a342c;
+  --text:#eee8dd; --text-dim:#a89d8c;
+  --accent:#d3996a; --accent-soft:#332a20;
+  --head-bg:#100e0b; --head-text:#eee8dd;
+  --row-alt:#221e18; --check-bg:#d3996a; --check-border:#6b5540;
+  --group-band:#2a2419; --ud-band:#2a2419;
+}
+*{box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);margin:0;padding-block:32px;}
+.wrap{max-width:1200px;margin:0 auto;padding-inline:20px;}
+
+/* Cabecera global + navegación de secciones */
+.page-head{margin-bottom:28px;}
+.eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px;}
+h1.page-title{font-family:var(--serif);font-size:30px;margin:0 0 6px;text-wrap:balance;}
+.page-sub{color:var(--text-dim);font-size:14px;margin-bottom:18px;line-height:1.5;}
+.toc{
+  display:flex;gap:8px;flex-wrap:wrap;
+  padding:10px;border:1px solid var(--border);border-radius:10px;
+  background:var(--surface);
+}
+.toc a{
+  font-size:12.5px;font-weight:600;color:var(--text-dim);
+  text-decoration:none;padding:6px 10px;border-radius:7px;
+}
+.toc a:hover{color:var(--accent);background:var(--accent-soft);}
+
+/* Secciones */
+section.block{
+  margin-top:44px;
+  padding-top:16px;
+  border-top:1px solid var(--border);
+  scroll-margin-top:16px;
+}
+section.block:first-of-type{border-top:none;padding-top:0;}
+.sec-eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:11.5px;color:var(--accent);font-weight:700;margin-bottom:6px;}
+h2.sec-title{font-family:var(--serif);font-size:22px;margin:0 0 4px;text-wrap:balance;}
+.sec-sub{color:var(--text-dim);font-size:13.5px;margin-bottom:18px;line-height:1.5;}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);align-items:center;}
+
+/* Tablas comunes */
+.table-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:14px;}
+table{border-collapse:collapse;width:100%;}
+table.tbl-seq{min-width:820px;}
+table.tbl-matrix{min-width:980px;}
+table.tbl-main{min-width:900px;}
+table.tbl-mini-matrix{min-width:520px;}
+
+thead th{
+  background:var(--head-bg);color:var(--head-text);
+  font-size:12px;padding:10px 8px;text-align:center;white-space:nowrap;
+  position:sticky;top:0;
+}
+thead th.col-wide{text-align:left;padding-left:16px;}
+thead th.col-titulo{width:170px;text-align:left;padding-left:14px;}
+thead th.col-desc{width:auto;text-align:left;}
+thead th.col-num{width:90px;}
+
+tbody tr:nth-child(even){background:var(--row-alt);}
+tbody tr:hover td{background:var(--accent-soft);}
+
+td{padding:0;border-bottom:1px solid var(--border);vertical-align:top;font-size:13.5px;}
+.cell{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:11px 13px;height:100%;}
+.cell.desc{font-family:var(--serif);line-height:1.55;}
+.cell.num{font-variant-numeric:tabular-nums;justify-content:center;text-align:center;}
+.cell .val{flex:1;}
+.copy-btn{
+  flex:none;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-dim);font-size:10.5px;line-height:1;padding:5px 6px;
+  border-radius:6px;cursor:pointer;font-family:var(--sans);
+}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent);}
+.copy-btn.copied{color:#3a8a5c;border-color:#3a8a5c;}
+
+/* Filas de agrupación (RA / BC / UD) dentro de una tabla */
+tr.group-row td, tr.ud-row td{
+  background:var(--group-band);
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:14px;
+  padding:10px 16px;
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+
+/* Matriz de checks (criterios / contidos) */
+table.tbl-matrix thead th.item-head{text-align:left;padding-left:16px;min-width:320px;}
+table.tbl-matrix tbody tr.item-row td{
+  border-bottom:1px solid var(--border);
+  font-size:13px;padding:9px 8px;text-align:center;
+}
+table.tbl-matrix tbody tr.item-row td.item-label{
+  text-align:left;padding-left:16px;font-family:var(--serif);line-height:1.45;
+}
+.item-code{color:var(--accent);font-weight:700;font-family:var(--sans);font-size:12px;margin-right:4px;}
+.min-no{color:var(--text-dim);font-style:italic;}
+
+.dot{
+  display:inline-block;width:16px;height:16px;border-radius:4px;
+  border:1.5px solid var(--check-border);
+}
+.dot.on{background:var(--check-bg);border-color:var(--check-bg);position:relative;}
+.dot.on::after{
+  content:"";position:absolute;left:4px;top:1px;width:4px;height:8px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+
+/* Actividades: bloque por UD con matrices mini */
+.ud-block{margin-top:30px;}
+.ud-block:first-child{margin-top:0;}
+.ud-title{font-family:var(--serif);font-size:18px;font-weight:600;margin:0 0 4px;}
+.ud-meta{font-size:12.5px;color:var(--text-dim);margin-bottom:12px;}
+.matrix-title{
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--accent);font-weight:700;margin:14px 0 8px;
+}
+table.tbl-mini-matrix thead th{text-align:center;font-size:11px;padding:8px 6px;white-space:nowrap;}
+table.tbl-mini-matrix thead th.code-head{text-align:left;padding-left:14px;min-width:90px;}
+table.tbl-mini-matrix tbody tr td{
+  border-bottom:1px solid var(--border);font-size:12.5px;padding:8px 6px;text-align:center;
+}
+table.tbl-mini-matrix tbody tr td.code-label{
+  text-align:left;padding-left:14px;font-family:var(--sans);
+  font-weight:700;color:var(--accent);white-space:nowrap;
+}
+
+.hint{font-size:12px;color:var(--text-dim);margin-top:12px;}
+
+/* Sección 5: diseño detallado de actividades */
+.design-ud-title{
+  font-family:var(--serif);font-size:18px;font-weight:600;
+  margin:30px 0 14px;
+}
+.design-ud-title:first-of-type{margin-top:0;}
+.design-grid{display:flex;flex-direction:column;gap:14px;}
+.design-card{
+  border:1px solid var(--border);border-radius:10px;
+  background:var(--surface);overflow:hidden;
+}
+.design-card-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:12px 16px;background:var(--group-band);
+  border-bottom:1px solid var(--border);
+}
+.design-card-head h3{
+  font-family:var(--serif);font-size:15.5px;font-weight:600;margin:0;
+  line-height:1.4;
+}
+.design-fields{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+}
+@media (max-width:720px){
+  .design-fields{grid-template-columns:1fr;}
+}
+.design-field{
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);
+}
+.design-field:nth-child(2n){border-right:none;}
+.design-field:nth-last-child(-n+2){border-bottom:none;}
+.design-field-label{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--accent);font-weight:700;margin-bottom:6px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.design-field-body{font-family:var(--serif);font-size:13.5px;line-height:1.55;}
+.design-field-body ul{margin:0;padding-left:18px;}
+.design-field-body li{margin-bottom:3px;}
+.design-field-body li:last-child{margin-bottom:0;}
+
+/* Secciones de texto libre (p.ej. avaliación inicial) */
+.text-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:24px 28px;margin-bottom:14px;
+}
+.text-card p{
+  font-family:var(--serif);font-size:15.5px;line-height:1.75;margin:0 0 14px;
+}
+.text-card p:last-child{margin-bottom:0;}
+.text-card-tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+</style>
+
+<div class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">__PAGE_EYEBROW__</div>
+    <h1 class="page-title">__PAGE_TITLE__</h1>
+    <div class="page-sub">__PAGE_SUB__</div>
+    <nav class="toc">
+      <a href="#avaliacion-inicial">0. Avaliación inicial</a>
+      <a href="#seq">1. Secuencia de UD</a>
+      <a href="#criterios">2. Criterios × UD</a>
+      <a href="#contidos">3. Contidos × UD</a>
+      <a href="#actividades">4. Actividades por UD</a>
+      <a href="#diseno">5. Deseño das actividades</a>
+      <a href="#cualificacion">6. Cualificación e recuperación</a>
+      <a href="#seguimento">7. Seguimento e avaliación da práctica docente</a>
+    </nav>
+  </div>
+
+  <!-- ============ 0. AVALIACIÓN INICIAL ============ -->
+  <section class="block" id="avaliacion-inicial">
+    <div class="sec-eyebrow">PROENS · 0</div>
+    <h2 class="sec-title">Procedemento de avaliación inicial</h2>
+    <div class="sec-sub">__AVAL_INICIAL_SUB__</div>
+
+    <div class="text-card" id="aval-inicial-block">
+      __AVAL_INICIAL_PARRAFOS__
+    </div>
+
+    <div class="text-card-tools">
+      <button class="copy-btn" data-copy-block="aval-inicial-block" style="padding:8px 14px;font-size:12.5px;">Copiar texto completo</button>
+    </div>
+    <div class="hint">__AVAL_INICIAL_HINT__</div>
+  </section>
+
+  <!-- ============ 1. SECUENCIA DE UD ============ -->
+  <section class="block" id="seq">
+    <div class="sec-eyebrow">PROENS · 1</div>
+    <h2 class="sec-title">Secuencia de unidades didácticas</h2>
+    <div class="sec-sub">__SEQ_SUB__</div>
+
+    <div class="table-scroll">
+      <table class="tbl-seq" id="seq-table">
+        <thead>
+          <tr>
+            <th class="col-titulo">Título UD</th>
+            <th class="col-desc">Descripción</th>
+            <th class="col-num">Nº sesións</th>
+            <th class="col-num">% peso</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="hint">__SEQ_HINT__</div>
+  </section>
+
+  <!-- ============ 2. CRITERIOS x UD ============ -->
+  <section class="block" id="criterios">
+    <div class="sec-eyebrow">PROENS · 2</div>
+    <h2 class="sec-title">Criterios de avaliación × Unidades Didácticas</h2>
+    <div class="sec-sub">__CRIT_SUB__</div>
+
+    <div class="legend">
+      <span><span class="dot on"></span> __LEGEND_ON__</span>
+      <span><span class="dot"></span> __LEGEND_OFF__</span>
+    </div>
+
+    <div class="table-scroll">
+      <table class="tbl-matrix" id="criterios-table">
+        <thead>
+          <tr>
+            <th class="item-head">Criterio de avaliación</th>
+            __UD_HEADERS__
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="hint">__CRIT_HINT__</div>
+  </section>
+
+  <!-- ============ 3. CONTIDOS x UD ============ -->
+  <section class="block" id="contidos">
+    <div class="sec-eyebrow">PROENS · 3</div>
+    <h2 class="sec-title">Bloques de contidos × Unidades Didácticas</h2>
+    <div class="sec-sub">__CONT_SUB__</div>
+
+    <div class="legend">
+      <span><span class="dot on"></span> __LEGEND_ON__</span>
+      <span><span class="dot"></span> __LEGEND_OFF__</span>
+    </div>
+
+    <div class="table-scroll">
+      <table class="tbl-matrix" id="contidos-table">
+        <thead>
+          <tr>
+            <th class="item-head">Contido</th>
+            __UD_HEADERS__
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="hint">__CONT_HINT__</div>
+  </section>
+
+  <!-- ============ 4. ACTIVIDADES POR UD ============ -->
+  <section class="block" id="actividades">
+    <div class="sec-eyebrow">PROENS · 4</div>
+    <h2 class="sec-title">Actividades por Unidade Didáctica</h2>
+    <div class="sec-sub">__ACT_SUB__</div>
+
+    <div class="table-scroll">
+      <table class="tbl-main" id="act-main-table">
+        <thead>
+          <tr>
+            <th class="col-titulo" style="width:230px;">Actividade</th>
+            <th class="col-desc" style="min-width:320px;">Descrición</th>
+            <th class="col-num" style="width:70px;">Sesións</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="hint">__ACT_HINT__</div>
+
+    <div class="legend" style="margin-top:20px;">
+      <span><span class="dot on"></span> __LEGEND_ON__</span>
+      <span><span class="dot"></span> __LEGEND_OFF__</span>
+    </div>
+
+    <div id="act-ud-blocks"></div>
+  </section>
+
+  <!-- ============ 5. DESEÑO DAS ACTIVIDADES ============ -->
+  <section class="block" id="diseno">
+    <div class="sec-eyebrow">PROENS · 5</div>
+    <h2 class="sec-title">Deseño das actividades</h2>
+    <div class="sec-sub">__DISENO_SUB__</div>
+    <div id="diseno-blocks"></div>
+  </section>
+
+  <!-- ============ 6. CUALIFICACIÓN E RECUPERACIÓN ============ -->
+  <section class="block" id="cualificacion">
+    <div class="sec-eyebrow">PROENS · 6</div>
+    <h2 class="sec-title">Criterios de cualificación e procedemento de recuperación</h2>
+    <div class="sec-sub">__CUALIF_SUB__</div>
+
+    <div class="text-card" id="cualif-block">
+      __CUALIF_PARRAFOS__
+    </div>
+
+    <div class="text-card-tools">
+      <button class="copy-btn" data-copy-block="cualif-block" style="padding:8px 14px;font-size:12.5px;">Copiar texto completo</button>
+    </div>
+    <div class="hint">__CUALIF_HINT__</div>
+  </section>
+
+  <!-- ============ 7. SEGUIMENTO E AVALIACIÓN DA PRÁCTICA DOCENTE ============ -->
+  <section class="block" id="seguimento">
+    <div class="sec-eyebrow">PROENS · 7</div>
+    <h2 class="sec-title">Procedemento de seguimento da programación e avaliación da práctica docente</h2>
+    <div class="sec-sub">__SEGUIMENTO_SUB__</div>
+
+    <div class="text-card" id="seguimento-block">
+      __SEGUIMENTO_PARRAFOS__
+    </div>
+
+    <div class="text-card-tools">
+      <button class="copy-btn" data-copy-block="seguimento-block" style="padding:8px 14px;font-size:12.5px;">Copiar texto completo</button>
+    </div>
+    <div class="hint">__SEGUIMENTO_HINT__</div>
+  </section>
+</div>
+
+<script>
+/* ============================================================
+   DATOS — sustituir cada bloque por los datos reales del módulo
+   ============================================================ */
+
+const N_UD = __N_UD__;
+
+/* Tabla 1: una fila por UD */
+const seqData = [
+  __SEQ_DATA__
+];
+
+/* Tabla 2: agrupado por RA. items: [{c:"RA1.1", t:"...", uds:[2,3], minNo?:true}] */
+const criteriosData = [
+  __CRITERIOS_DATA__
+];
+
+/* Tabla 3: agrupado por BC, misma forma que criteriosData */
+const contidosData = [
+  __CONTIDOS_DATA__
+];
+
+/* Tabla 4: por UD. acts: [{cod:"A0.1", t:"...", d:"...", s:2, ca:[...], bc:[...]}] */
+const actividadesData = [
+  __ACTIVIDADES_DATA__
+];
+
+/* Sección 5: por UD. acts: [{cod:"A0.1", t:"...", descripcion:"...",
+   objetivos:["...", "..."], resultados:["..."], recursos:["..."]}] */
+const disenoData = [
+  __DISENO_DATA__
+];
+
+/* ============================================================
+   RENDER — no hace falta tocar nada de aquí abajo
+   ============================================================ */
+
+function escapeAttr(s){
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+}
+function copyableCell(text, isNum){
+  return `<div class="cell${isNum ? ' num' : ''}"><span class="val">${text}</span><button class="copy-btn" data-copy="${escapeAttr(text)}">Copiar</button></div>`;
+}
+
+// --- Tabla 1 ---
+(function renderSeq(){
+  const tbody = document.querySelector('#seq-table tbody');
+  seqData.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${copyableCell(row.t)}</td>
+      <td><div class="cell desc"><span class="val">${row.d}</span><button class="copy-btn" data-copy="${escapeAttr(row.d)}">Copiar</button></div></td>
+      <td>${copyableCell(row.s, true)}</td>
+      <td>${copyableCell(row.p + ' %', true)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+})();
+
+// --- Tabla 2 y 3 (misma estructura) ---
+function renderMatrix(tableId, groups){
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  groups.forEach(g => {
+    const trG = document.createElement('tr');
+    trG.className = 'group-row';
+    trG.innerHTML = `<td colspan="${N_UD + 1}">${g.group} — ${g.nombre}</td>`;
+    tbody.appendChild(trG);
+
+    g.items.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.className = 'item-row';
+      let cells = `<td class="item-label"><span class="item-code">${item.c}</span>${item.minNo ? '<span class="min-no">' + item.t + '</span>' : item.t}</td>`;
+      for(let ud = 1; ud <= N_UD; ud++){
+        const on = item.uds.includes(ud);
+        cells += `<td><span class="dot${on ? ' on' : ''}"></span></td>`;
+      }
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    });
+  });
+}
+renderMatrix('criterios-table', criteriosData);
+renderMatrix('contidos-table', contidosData);
+
+// UD header row (shared markup, injected once per matrix table)
+(function injectUdHeaders(){
+  document.querySelectorAll('.tbl-matrix thead tr').forEach(tr => {
+    // __UD_HEADERS__ placeholder is textual; if left unresolved, build headers from N_UD
+    if(tr.innerHTML.includes('__UD_HEADERS__')){
+      let ths = '';
+      for(let ud = 1; ud <= N_UD; ud++){ ths += `<th>UD${ud}</th>`; }
+      tr.innerHTML = tr.innerHTML.replace('__UD_HEADERS__', ths);
+    }
+  });
+})();
+
+// --- Tabla 4 ---
+(function renderActividades(){
+  const tbodyMain = document.querySelector('#act-main-table tbody');
+  actividadesData.forEach(ud => {
+    const trUd = document.createElement('tr');
+    trUd.className = 'ud-row';
+    trUd.innerHTML = `<td colspan="3">${ud.ud} — ${ud.nombre} (${ud.sesiones} sesións)</td>`;
+    tbodyMain.appendChild(trUd);
+
+    ud.acts.forEach(a => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${copyableCell(a.cod + '. ' + a.t)}</td>
+        <td><div class="cell desc"><span class="val">${a.d}</span><button class="copy-btn" data-copy="${escapeAttr(a.d)}">Copiar</button></div></td>
+        <td>${copyableCell(a.s, true)}</td>
+      `;
+      tbodyMain.appendChild(tr);
+    });
+  });
+
+  const udBlocksEl = document.getElementById('act-ud-blocks');
+  actividadesData.forEach(ud => {
+    const casSet = [...new Set(ud.acts.flatMap(a => a.ca))].sort();
+    const bcsSet = [...new Set(ud.acts.flatMap(a => a.bc))].sort();
+
+    const block = document.createElement('div');
+    block.className = 'ud-block';
+
+    let caRows = '';
+    casSet.forEach(c => {
+      let cells = `<td class="code-label">${c}</td>`;
+      ud.acts.forEach(a => { cells += `<td><span class="dot${a.ca.includes(c) ? ' on' : ''}"></span></td>`; });
+      caRows += `<tr>${cells}</tr>`;
+    });
+
+    let bcRows = '';
+    bcsSet.forEach(c => {
+      let cells = `<td class="code-label">${c}</td>`;
+      ud.acts.forEach(a => { cells += `<td><span class="dot${a.bc.includes(c) ? ' on' : ''}"></span></td>`; });
+      bcRows += `<tr>${cells}</tr>`;
+    });
+
+    const actHeaders = ud.acts.map(a => `<th title="${escapeAttr(a.t)}">${a.cod}</th>`).join('');
+
+    block.innerHTML = `
+      <div class="ud-title">${ud.ud} — ${ud.nombre}</div>
+      <div class="ud-meta">${ud.sesiones} sesións · ${ud.acts.length} actividades</div>
+
+      <div class="matrix-title">Criterio de avaliación (CA) × Actividade</div>
+      <div class="table-scroll">
+        <table class="tbl-mini-matrix">
+          <thead><tr><th class="code-head">CA</th>${actHeaders}</tr></thead>
+          <tbody>${caRows}</tbody>
+        </table>
+      </div>
+
+      <div class="matrix-title">Contido (BC) × Actividade</div>
+      <div class="table-scroll">
+        <table class="tbl-mini-matrix">
+          <thead><tr><th class="code-head">BC</th>${actHeaders}</tr></thead>
+          <tbody>${bcRows}</tbody>
+        </table>
+      </div>
+    `;
+    udBlocksEl.appendChild(block);
+  });
+})();
+
+// --- Sección 5: diseño de actividades ---
+(function renderDiseno(){
+  const wrap = document.getElementById('diseno-blocks');
+  function listOrText(arr){
+    if(arr.length === 1) return `<div class="design-field-body">${arr[0]}</div>`;
+    return `<div class="design-field-body"><ul>${arr.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+  }
+  function copyBtn(text){
+    return `<button class="copy-btn" data-copy="${escapeAttr(text)}">Copiar</button>`;
+  }
+  disenoData.forEach(ud => {
+    const title = document.createElement('div');
+    title.className = 'design-ud-title';
+    title.textContent = `${ud.ud} — ${ud.nombre}`;
+    wrap.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'design-grid';
+
+    ud.acts.forEach(a => {
+      const objTxt = a.objetivos.join('\n');
+      const resTxt = a.resultados.join('\n');
+      const recTxt = a.recursos.join('\n');
+
+      const card = document.createElement('div');
+      card.className = 'design-card';
+      card.innerHTML = `
+        <div class="design-card-head">
+          <h3>${a.cod}. ${a.t}</h3>
+        </div>
+        <div class="design-fields">
+          <div class="design-field" style="grid-column:1 / -1;">
+            <div class="design-field-label">Descrición ${copyBtn(a.descripcion)}</div>
+            <div class="design-field-body">${a.descripcion}</div>
+          </div>
+          <div class="design-field">
+            <div class="design-field-label">Obxectivos específicos ${copyBtn(objTxt)}</div>
+            ${listOrText(a.objetivos)}
+          </div>
+          <div class="design-field">
+            <div class="design-field-label">Resultados / produtos ${copyBtn(resTxt)}</div>
+            ${listOrText(a.resultados)}
+          </div>
+          <div class="design-field" style="grid-column:1 / -1;">
+            <div class="design-field-label">Recursos específicos ${copyBtn(recTxt)}</div>
+            ${listOrText(a.recursos)}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+
+    wrap.appendChild(grid);
+  });
+})();
+
+// --- Copiar (delegado global) ---
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.copy-btn');
+  if(!btn) return;
+  const blockId = btn.getAttribute('data-copy-block');
+  const text = blockId
+    ? Array.from(document.querySelectorAll(`#${blockId} p`)).map(p => p.innerText).join('\n\n')
+    : btn.getAttribute('data-copy');
+  try{
+    navigator.clipboard.writeText(text);
+    const original = btn.textContent;
+    btn.textContent = 'OK';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1000);
+  }catch(err){
+    btn.textContent = 'Erro';
+  }
+});
+</script>

@@ -66,6 +66,15 @@ cambios en la API obliguen a tocar el modelo de negocio.
 
 :::
 
+:::tip
+[Convertir entre DTO y entidad]
+
+En los ejemplos de este apartado la conversión se escribe a mano
+(`LibroResponse.desde(libro)`). Cuando los DTO se multiplican, esa
+conversión se delega en un mapper generado: ver [Mappers con
+MapStruct](/tema-0/l-mappers-mapstruct).
+:::
+
 ## El controlador
 
 ```java

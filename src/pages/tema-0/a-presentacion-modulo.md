@@ -229,6 +229,7 @@ dominio esbozado y el repositorio publicado.
 | [i](/tema-0/i-flujo-mvc) | Flujo MVC de Spring Boot |
 | [j](/tema-0/j-actividades) | Actividades A0.1 – A0.6 |
 | [k](/tema-0/k-chuleta-anotaciones) | Chuleta de anotaciones: Lombok y Spring Framework |
+| [l](/tema-0/l-mappers-mapstruct) | Mappers con MapStruct |
 
 <NextPageButton to="/tema-0/b-proyecto-multagal">
 El proyecto MULTAGAL

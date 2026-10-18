@@ -159,6 +159,6 @@ JDBC y JPA. Aquí sólo la nombramos para que la reconozcas cuando aparezca.
 
 :::
 
-<NextPageButton to="/tema-1/a-presentacion-tema">
-Empezar la UD1
+<NextPageButton to="/tema-0/l-mappers-mapstruct">
+Mappers con MapStruct
 </NextPageButton>

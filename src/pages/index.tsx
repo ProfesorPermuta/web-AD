@@ -32,7 +32,8 @@ const TEMAS: Tema[] = [
       {label: 'Flujo de trabajo con Git', href: '/tema-0/h-flujo-git'},
       {label: 'Flujo MVC de Spring Boot', href: '/tema-0/i-flujo-mvc'},
       {label: 'Actividades', href: '/tema-0/j-actividades'},
-      {label: 'Chuleta de anotaciones: Lombok y Spring', href: '/tema-0/k-chuleta-anotaciones'}
+      {label: 'Chuleta de anotaciones: Lombok y Spring', href: '/tema-0/k-chuleta-anotaciones'},
+      {label: 'Mappers con MapStruct', href: '/tema-0/l-mappers-mapstruct'}
     ],
   },
   {
