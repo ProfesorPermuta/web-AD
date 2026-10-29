@@ -400,8 +400,10 @@ fase previa «en Java puro» seguida de una migración posterior al framework.
   por año/mes/provincia para el archivado de expedientes.
 - A1.2. Servicio de purga: localización y borrado de expedientes prescritos
   recorriendo el árbol de archivo.
-- A1.3. Vigilante del *buzón de entrada* de denuncias: detección automática de
-  nuevos ficheros depositados por los radares mediante `WatchService`.
+- A1.3. Vigilante e ingesta del *buzón de entrada* de denuncias: detección con
+  `WatchService` de los CSV depositados por los radares, procesamiento en un
+  hilo independiente, registro de cada multa en el sistema de datos y
+  archivo de la fotografía asociada (`<matricula>_<idRadar>.jpg`).
 - A1.4. Diseño e implementación de la jerarquía `MultagalException`.
 
 ---

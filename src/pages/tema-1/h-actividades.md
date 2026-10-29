@@ -1,15 +1,26 @@
 ---
 title: 'Actividades de la UD1'
-description: Actividades A1.1 a A1.4 de gestión de ficheros y directorios sobre el proyecto MULTAGAL, con sus criterios de aceptación.
+description: Actividades A1.1 a A1.4 de gestión de ficheros y directorios sobre el proyecto MULTAGAL, con las pruebas a implementar y sus criterios de aceptación.
 ---
+
+import DownloadButton from '@site/src/components/DownloadButton';
 
 # Actividades de la UD1
 
 Cuatro actividades, 8 horas. Al terminarlas tendrás en MULTAGAL un componente
 de archivado jerárquico de expedientes, un servicio de purga por
-prescripción, un vigilante de directorio para las captaciones de radar y una
+prescripción, un vigilante de directorio que procesa en segundo plano los CSV
+de captación de los radares y registra las multas detectadas, y una
 jerarquía de excepciones propia del dominio, todo ello accesible a través de
-los controladores REST correspondientes.
+los controladores REST correspondientes y cubierto por pruebas unitarias y de
+integración.
+
+:::info[Pruebas]
+Cada actividad lista las pruebas que debes implementar. Se escriben con
+JUnit 5, AssertJ y Mockito, usan `@TempDir` para cualquier fichero y se
+ejecutan todas con `./mvnw test`. Una actividad sin sus pruebas no se
+considera terminada.
+:::
 
 :::info[Entrega]
 
@@ -97,16 +108,34 @@ la persona expedientada.
 
 ### Entregable
 
-Clase `AlmacenExpedientes`, la plantilla de texto del expediente, con
-pruebas unitarias sobre un directorio temporal (no sobre rutas reales de tu
-disco) que comprueben también el contenido generado, y
-`ExpedienteController` con sus endpoints probados con `MockMvc` o pruebas de
-integración equivalentes.
+Clase `AlmacenExpedientes`, la plantilla de texto del expediente y
+`ExpedienteController`, junto con las pruebas descritas a continuación.
 
 Un ADR que justifique en qué capa del proyecto (`controller`, `service`,
 `repository`...) has colocado `AlmacenExpedientes` y, si lo separas, la
 generación del texto desde la plantilla, y por qué descartaste las demás
 ([apartado f del tema 0](/tema-0/f-inyeccion-dependencias#la-regla-de-dependencia)).
+
+### Pruebas unitarias
+
+`AlmacenExpedientesTest` (JUnit 5 + AssertJ, sin contexto de Spring, con un
+directorio `@TempDir` en lugar de rutas reales de tu disco):
+
+1. `archivar` crea el fichero en `<raiz>/<año>/<mes>/<provincia>/<numero>.txt`
+   aunque ninguno de los directorios intermedios exista.
+2. El contenido generado incluye todos los datos del expediente, con la fecha
+   y el importe (dos decimales) con el formato esperado, y se lee
+   correctamente en UTF-8 con caracteres como «ñ» y tildes.
+3. `buscar` devuelve la ruta de un expediente archivado en cualquier
+   subcarpeta, y falla con `ExpedienteNoEncontradoException` (A1.4) si no
+   existe.
+4. `mover` cambia el fichero de carpeta y el texto del documento refleja el
+   nuevo estado.
+5. `mover` con un destino ya ocupado no pierde ningún dato.
+6. `adjuntarFoto` (A1.3) deja `<numeroExpediente>.jpg` junto al `.txt`, y
+   tras `mover` la foto sigue junto al documento en su nueva carpeta.
+
+Los controladores no requieren pruebas automáticas en esta unidad.
 
 ### Criterios de aceptación
 
@@ -117,12 +146,14 @@ generación del texto desde la plantilla, y por qué descartaste las demás
 | 3 | `buscar` localiza un expediente sin recorrer manualmente todo el árbol a mano en el código cliente |
 | 4 | El directorio raíz de archivado es configurable, no está escrito en el código |
 | 5 | Las pruebas usan un directorio temporal y lo limpian al terminar |
-| 6 | Los endpoints del controlador devuelven el código HTTP correcto en el caso favorable y en el expediente no encontrado || 7 | El controlador no contiene lógica de acceso a ficheros: solo delega en `AlmacenExpedientes` |
+| 6 | Los endpoints del controlador devuelven el código HTTP correcto en el caso favorable y en el expediente no encontrado |
+| 7 | El controlador no contiene lógica de acceso a ficheros: solo delega en `AlmacenExpedientes` |
 | 8 | El formato del documento está en un fichero de plantilla externo; el código solo aporta los datos mediante `String.format` |
 | 9 | El `.txt` generado contiene todos los datos del expediente, correctamente formateados (fechas, importe con dos decimales) y en UTF-8 |
 | 10 | Tras `mover`, el documento archivado muestra el nuevo estado |
 | 11 | El ADR indica en qué capa se ha colocado cada componente y justifica la elección frente a las alternativas, de acuerdo con la regla de dependencia |
 | 12 | `GET .../archivo` responde con el texto del expediente y `Content-Type: text/plain; charset=UTF-8`, o `404` si no existe; ninguna respuesta expone la ruta física del servidor |
+| 13 | Las pruebas 1 a 6 existen, se ejecutan sin Docker ni `@SpringBootTest` y pasan con `./mvnw test` |
 
 :::tip
 Java ofrece `Files.createTempDirectory` para crear un directorio temporal
@@ -163,9 +194,26 @@ paralelas.
 
 ### Entregable
 
-Clase `ServicioPurgaExpedientes`, con pruebas que verifiquen que se
-purgan los expedientes prescritos y se conservan los que no lo están, y el
-endpoint de purga probado con `MockMvc` o equivalente.
+Clase `ServicioPurgaExpedientes` y el endpoint de purga, junto con las
+pruebas descritas a continuación.
+
+### Pruebas unitarias
+
+`ServicioPurgaExpedientesTest` (JUnit 5 + AssertJ, `@TempDir`, con un
+`Clock` fijo inyectado para que el resultado no dependa del día en que se
+ejecuten):
+
+1. Un expediente **leve** de hace 4 meses se purga; uno de hace 2 meses se
+   conserva.
+2. Un expediente **grave** o **muy grave** de hace 4 meses se conserva; uno
+   de hace 7 meses se purga.
+3. Casos límite: expediente leve exactamente en el límite de 3 meses y grave
+   exactamente en el de 6 (decide y documenta si el límite es inclusivo).
+4. Tras purgar el único expediente de un mes/provincia, el directorio queda
+   eliminado; si quedaba otro expediente, el directorio se conserva.
+5. Un árbol vacío devuelve `0` y no lanza excepción.
+6. El log (o el colaborador que lo registra, simulado con Mockito) recibe la
+   entrada de cada expediente **antes** de su borrado (`InOrder`).
 
 ### Criterios de aceptación
 
@@ -178,6 +226,7 @@ endpoint de purga probado con `MockMvc` o equivalente.
 | 5 | Queda constancia (log) de cada purga realizada, antes del borrado |
 | 6 | El endpoint de purga responde con el número de expedientes purgados |
 | 7 | La purga no se ejecuta automáticamente al arrancar la aplicación, solo al invocar el endpoint |
+| 8 | Las pruebas 1 a 6 existen y pasan con `./mvnw test`, sin depender de la fecha real del sistema |
 
 :::warning
 [Sobre el borrado de directorios]
@@ -190,47 +239,199 @@ directorio que los contenía ha quedado vacío.
 
 ---
 
-## A1.3 — Vigilante del buzón de entrada de denuncias
+## A1.3 — Vigilante e ingesta del buzón de entrada de denuncias
 
-**Objetivo:** detectar automáticamente los nuevos ficheros de captación
-depositados por los radares mediante `WatchService`.
+**Objetivo:** detectar automáticamente los ficheros CSV de captación
+depositados por los radares con `WatchService`, **procesarlos en un hilo
+distinto al del vigilante** y **registrar cada multa** detectada en el
+sistema de datos de MULTAGAL.
+
+### Formato del fichero de captación
+
+En esta unidad cada radar deposita un CSV de texto, en UTF-8, separado por
+`;`, con una línea de cabecera y un registro por vehículo captado:
+
+```text
+idRadar;matricula;fechaHora;velocidadMedida;limiteVia
+R-0042;1234ABC;2026-03-14T10:32:05;87;50
+R-0042;5678DEF;2026-03-14T10:32:41;52;50
+R-0042;9012GHI;2026-03-14T10:33:10;49;50
+```
+
+Solo se sanciona la captación cuya `velocidadMedida` supera `limiteVia`. Para
+esta actividad usa esta tabla simplificada (no es la normativa real):
+
+| Exceso sobre el límite | Gravedad | Importe |
+|------------------------|----------|---------|
+| hasta 20 km/h | `LEVE` | 100,00 € |
+| de 21 a 40 km/h | `GRAVE` | 300,00 € |
+| más de 40 km/h | `MUY_GRAVE` | 500,00 € |
+
+El siguiente fichero de ejemplo contiene registros válidos (de las tres
+gravedades, uno sin superar el límite y otro justo en el límite) y registros
+inválidos (fecha mal formada, velocidad no numérica, columnas de menos y
+velocidad negativa). Úsalo como base de tus pruebas y amplíalo si lo necesitas.
+
+<DownloadButton file="plantillas/captaciones-radar-ejemplo.csv" filename="captaciones-radar-ejemplo.csv">
+Descargar CSV de ejemplo
+</DownloadButton>
+
+### Fotografías de las captaciones
+
+Además del CSV, el radar deposita **una fotografía por cada vehículo
+captado** en otro directorio, `buzon-entrada/fotos/`, en formato JPEG y con
+el nombre `<matricula>_<idRadar>.jpg`. Para el ejemplo anterior, las
+infracciones generarían ficheros como `1234ABC_R-0042.jpg` o
+`2468RST_R-0042.jpg`.
+
+- El vigilante **solo vigila el directorio de los CSV**: el CSV es el que
+  dispara el procesamiento. Las fotos se buscan por nombre cuando se procesa
+  cada registro.
+- Solo hay foto de las captaciones que se sancionan, pero pueden llegar
+  fotos de vehículos que no lleguen a sancionarse: no es un error.
+- Si la foto de una infracción **no existe** (o aún no ha terminado de
+  subirse), el expediente se crea igualmente y se deja constancia en el log
+  y en el contador de «expedientes sin foto». Documenta en el diario técnico
+  esta decisión y la alternativa que has descartado.
+
+:::info[Formato provisional]
+Aquí lees el CSV a mano (`BufferedReader` y `String.split`). En la UD2
+(actividad A2.1) lo sustituirás por un lector robusto con OpenCSV y por el
+formato real del fabricante; el diseño que hagas ahora debe permitir ese
+cambio sin tocar el vigilante.
+:::
 
 ### Tareas
 
 1. Implementa `VigilanteBuzonEntrada`, un componente que registre un
-   directorio `buzon-entrada/` con `WatchService` según el
+   directorio `buzon-entrada/` (configurable, como en
+   [A1.1](#a11--componente-almacenexpedientes)) con `WatchService` según el
    [apartado d](/tema-1/d-watchservice), atendiendo como mínimo a
-   `ENTRY_CREATE`.
-2. Al detectar un fichero nuevo, invoca un punto de procesamiento (puede
-   ser, de momento, un simple registro en log con la ruta detectada; el
-   procesamiento real del contenido llegará en unidades posteriores).
-3. Arranca el vigilante en un hilo propio al iniciar la aplicación y
-   deténlo de forma ordenada al pararla.
-4. Decide y documenta en el diario técnico si usas `take()` o `poll()` con
+   `ENTRY_CREATE`. Ignora todo lo que no sea un `*.csv`.
+2. El hilo del vigilante **solo detecta**: no lee ni procesa el contenido.
+   Por cada CSV nuevo entrega su ruta a un `ExecutorService` (por ejemplo,
+   un *pool* fijo pequeño) y vuelve de inmediato a esperar eventos, de modo
+   que un fichero grande no retrase la detección de los siguientes.
+3. Implementa `ProcesadorCapturas`, que ejecuta cada tarea del *pool* y:
+   1. Espera a que el fichero esté completo (por ejemplo, comprobando que
+      su tamaño se mantiene estable; véase la nota del apartado d).
+   2. Lee el CSV línea a línea con `Files.newBufferedReader` (UTF-8).
+   3. Valida cada registro (número de columnas, fecha ISO, velocidades
+      numéricas y positivas). Un registro inválido **no aborta** el
+      fichero: se registra en el log con su número de línea y se continúa.
+   4. Descarta las captaciones que no superan el límite.
+   5. Por cada captación infractora, **crea y registra el expediente**
+      invocando `ServicioExpedientes.registrar` (A0.4), con gravedad e
+      importe según la tabla anterior, y lo **archiva** con
+      `AlmacenExpedientes.archivar` (A1.1). Genera el número de
+      expediente de forma que dos hilos no puedan repetirlo.
+   6. Busca la fotografía `buzon-entrada/fotos/<matricula>_<idRadar>.jpg`
+      (construye la ruta con `Path.resolve`, comprobando que el nombre no
+      contiene separadores de ruta ni `..`). Si existe, **muévela** al
+      directorio del expediente archivado, junto a su `.txt`, con el nombre
+      `<numeroExpediente>.jpg`. Añade a `AlmacenExpedientes` un método
+      (por ejemplo `adjuntarFoto(numeroExpediente, rutaFoto)`) para ello;
+      el procesador no mueve ficheros del archivo por su cuenta. Si el
+      expediente cambia de carpeta en `mover`, la foto debe ir con él.
+   7. Cuando termina, mueve el CSV a `buzon-entrada/procesados/`; si el
+      fichero entero es ilegible, a `buzon-entrada/errores/`. Nunca lo
+      dejes en el buzón, o se reprocesaría al reiniciar.
+4. Registra en el log, al terminar cada fichero, un resumen: registros
+   leídos, expedientes creados, registros inválidos y descartados por no
+   superar el límite, y expedientes con y sin foto. El log es información adicional: **no sustituye** al
+   registro de la multa en el sistema de datos.
+5. Arranca el vigilante en un hilo propio al iniciar la aplicación y
+   deténlo de forma ordenada al pararla: cierra el `WatchService`, llama a
+   `shutdown()` sobre el *pool* y espera con `awaitTermination` a que
+   terminen las tareas en curso.
+6. Decide y documenta en el diario técnico si usas `take()` o `poll()` con
    tiempo de espera, y por qué.
-5. Expón un endpoint de solo lectura `GET /buzon-entrada/estado` en un
-   `BuzonEntradaController` que informe si el vigilante está activo y,
-   como mínimo, la ruta o el nombre del último fichero detectado. El
-   controlador consulta el estado del vigilante; no accede directamente al
-   directorio ni al `WatchService`.
+7. Expón un endpoint de solo lectura `GET /buzon-entrada/estado` en un
+   `BuzonEntradaController` que informe de si el vigilante está activo, el
+   último fichero detectado y los contadores acumulados (ficheros
+   procesados, expedientes creados, registros inválidos, expedientes sin
+   foto). El controlador
+   consulta el estado del vigilante y del procesador; no accede
+   directamente al directorio ni al `WatchService`.
 
 ### Entregable
 
-Componente `VigilanteBuzonEntrada` integrado en el arranque de la
-aplicación, con una prueba que deposite un fichero en un directorio
-temporal y compruebe que el vigilante lo detecta, y el endpoint de estado
-probado con `MockMvc` o equivalente.
+`VigilanteBuzonEntrada`, `ProcesadorCapturas` y `BuzonEntradaController`
+integrados en el arranque de la aplicación, un CSV de ejemplo con registros
+válidos, inválidos e infracciones de las tres gravedades, algunas fotos de
+prueba generadas por ti (cualquier JPEG pequeño sin datos reales) y las pruebas
+descritas a continuación.
+
+### Pruebas unitarias
+
+`ProcesadorCapturasTest` (JUnit 5 + AssertJ, `@TempDir`; `ServicioExpedientes`
+y `AlmacenExpedientes` simulados con Mockito; sin hilos ni `WatchService`:
+se invoca el procesador directamente):
+
+1. Un CSV con tres captaciones, una de ellas sin superar el límite, crea
+   **exactamente dos** expedientes (`verify(servicio, times(2))`).
+2. Cada gravedad del cuadro produce el importe correcto; cubre los límites
+   de 20/21 y de 40/41 km/h. Un exceso de 0 km/h no sanciona.
+3. Una línea con columnas de menos, fecha mal formada o velocidad no
+   numérica se cuenta como inválida y **no impide** procesar las demás.
+4. Cada expediente registrado se archiva (`InOrder`: primero `registrar`,
+   luego `archivar`).
+5. Un CSV correcto acaba en `procesados/` y deja de estar en el buzón; uno
+   ilegible acaba en `errores/`.
+6. Un CSV solo con cabecera o vacío no crea expedientes ni lanza excepción.
+7. Con la foto `<matricula>_<idRadar>.jpg` presente, se pide adjuntarla al
+   expediente correspondiente y deja de estar en `fotos/`.
+8. Sin foto, el expediente se crea igualmente y se cuenta como «sin foto».
+9. La foto de otro radar con la misma matrícula no se asocia a la captación
+   (el nombre incluye el radar).
+
+`VigilanteBuzonEntradaTest` (con un directorio `@TempDir` real y un
+procesador simulado):
+
+10. Al copiar un `.csv` en el directorio vigilado, el procesador recibe su
+   ruta. Espera el resultado con **Awaitility** (`await().atMost(...)`), no
+   con `Thread.sleep`.
+11. Un fichero `.txt` o un `.csv.tmp` depositado no llega al procesador.
+12. Tras depositar dos CSV seguidos, **ambos** llegan al procesador (prueba
+   de que se hace `reset()`).
+13. `detener()` cierra el vigilante y el *pool*; el hilo ya no está vivo
+    (`Thread.isAlive`) pasado un tiempo razonable.
+
+`IngestaBuzonIT` (integración, `@SpringBootTest` con el directorio del buzón
+apuntando a un `@TempDir` mediante `@DynamicPropertySource`):
+
+14. Se deposita el CSV de ejemplo; con Awaitility se comprueba que
+    `ServicioExpedientes.obtener(...)` encuentra los expedientes esperados,
+    que existen sus `.txt` archivados y que el CSV se ha movido a
+    `procesados/`.
+15. Se comprueba que la ejecución del procesamiento ocurre en un hilo
+    distinto del hilo del vigilante (por ejemplo, registrando el nombre del
+    hilo con un *pool* con `ThreadFactory` propia).
 
 ### Criterios de aceptación
 
 | # | Criterio |
 |---|----------|
 | 1 | El vigilante se registra sobre el directorio correcto al arrancar |
-| 2 | Se detecta la creación de un fichero nuevo en un tiempo razonable |
+| 2 | Se detecta la creación de un fichero CSV nuevo en un tiempo razonable; los que no son CSV se ignoran |
 | 3 | La `WatchKey` se reinicia (`reset()`) tras procesar cada tanda de eventos |
-| 4 | El vigilante se detiene de forma ordenada al parar la aplicación, sin dejar hilos colgados |
-| 5 | La decisión `take()`/`poll()` está justificada en el diario técnico |
-| 6 | El endpoint de estado refleja si el vigilante está activo y el último fichero detectado |
+| 4 | El procesamiento del CSV se hace en un hilo distinto al del vigilante, que no se bloquea mientras tanto |
+| 5 | Cada captación que supera el límite queda registrada como expediente en el sistema de datos y archivada en disco, con la gravedad y el importe correctos |
+| 6 | Un registro inválido se registra en el log con su línea y no impide procesar el resto del fichero |
+| 7 | El CSV procesado se mueve a `procesados/` (o `errores/`) y no se reprocesa |
+| 8 | El vigilante y el *pool* se detienen de forma ordenada al parar la aplicación, sin hilos colgados |
+| 9 | La decisión `take()`/`poll()` está justificada en el diario técnico |
+| 10 | El endpoint de estado refleja si el vigilante está activo, el último fichero detectado y los contadores |
+| 11 | La fotografía `<matricula>_<idRadar>.jpg` se asocia al expediente de su captación y se archiva junto a su `.txt`; sin foto, el expediente se crea igualmente y queda contado |
+| 12 | Las pruebas 1 a 15 existen y pasan con `./mvnw test`; ninguna usa `Thread.sleep` para esperar |
+
+:::warning[Concurrencia]
+`ServicioExpedientes` y `RepositorioExpedientesMemoria` serán invocados
+desde varios hilos. Comprueba que el repositorio (basado en
+`ConcurrentHashMap`) y la generación del número de expediente son seguros
+ante accesos concurrentes, y que los contadores del estado usan
+`AtomicInteger`/`LongAdder` o equivalente.
+:::
 
 ---
 
@@ -247,8 +448,8 @@ proyecto, sustituyendo la propagación directa de excepciones de bajo nivel.
    `ExpedienteNoEncontradoException` y una excepción específica para
    errores de almacenamiento en disco (por ejemplo,
    `AlmacenamientoExpedienteException`).
-2. Revisa `AlmacenExpedientes`, `ServicioPurgaExpedientes` y
-   `VigilanteBuzonEntrada`: en cualquier punto donde captures una
+2. Revisa `AlmacenExpedientes`, `ServicioPurgaExpedientes`,
+   `VigilanteBuzonEntrada` y `ProcesadorCapturas`: en cualquier punto donde captures una
    `IOException` o subclase de `java.nio.file`, tradúcela a la excepción de
    dominio correspondiente, conservando la causa original.
 3. Usa `try-with-resources` en todos los puntos donde abras un recurso
@@ -260,7 +461,29 @@ proyecto, sustituyendo la propagación directa de excepciones de bajo nivel.
 
 Paquete `domain.exception` con la jerarquía completa, y el código de A1.1,
 A1.2 y A1.3 actualizado para lanzar excepciones de dominio en lugar de
-excepciones de `java.nio.file` sin traducir.
+excepciones de `java.nio.file` sin traducir, junto con las pruebas
+descritas a continuación.
+
+### Pruebas unitarias
+
+`MultagalExceptionTest` y pruebas de traducción (JUnit 5 + AssertJ,
+`@TempDir`):
+
+1. `ExpedienteNoEncontradoException` y `AlmacenamientoExpedienteException`
+   son instancias de `MultagalException` y de `RuntimeException`.
+2. Una excepción de almacenamiento creada con una `IOException` como causa
+   la conserva (`getCause()`) y su mensaje identifica el expediente o la
+   ruta lógica, no una ruta física completa.
+3. `AlmacenExpedientes.archivar` sobre un destino imposible (por ejemplo,
+   un fichero donde debería haber un directorio) lanza
+   `AlmacenamientoExpedienteException` con la `IOException` original como
+   causa, no la `IOException` directamente.
+4. `AlmacenExpedientes.buscar` de un expediente inexistente lanza
+   `ExpedienteNoEncontradoException`.
+5. Un fallo de E/S durante la purga (`ServicioPurgaExpedientes`) se
+   traduce a la excepción de dominio.
+6. `ProcesadorCapturas` ante un CSV ilegible no propaga la excepción al
+   hilo del *pool*: la traduce, la registra y mueve el fichero a `errores/`.
 
 ### Criterios de aceptación
 
@@ -268,9 +491,10 @@ excepciones de `java.nio.file` sin traducir.
 |---|----------|
 | 1 | `MultagalException` extiende `RuntimeException`, no `Exception` |
 | 2 | Cada excepción de dominio conserva la excepción original como causa |
-| 3 | Ningún método público de `AlmacenExpedientes`, `ServicioPurgaExpedientes` o `VigilanteBuzonEntrada` deja escapar una `IOException` sin traducir |
+| 3 | Ningún método público de `AlmacenExpedientes`, `ServicioPurgaExpedientes`, `VigilanteBuzonEntrada` o `ProcesadorCapturas` deja escapar una `IOException` sin traducir |
 | 4 | Todos los recursos `AutoCloseable` se abren con `try-with-resources` |
 | 5 | El diario técnico justifica la decisión de diseño de la jerarquía |
+| 6 | Las pruebas 1 a 6 existen y pasan con `./mvnw test` |
 
 ---
 
@@ -298,6 +522,12 @@ consultar los apuntes**.
    un bloque `finally`?
 10. ¿Por qué el controlador no debe acceder directamente al sistema de
     ficheros, y qué capa debería hacerlo en su lugar?
+11. ¿Por qué el hilo que vigila el directorio no debe procesar el contenido
+    de los ficheros? ¿Qué pasaría con los eventos mientras tanto?
+12. ¿Qué problemas de concurrencia aparecen cuando varios hilos registran
+    expedientes a la vez, y cómo los has evitado?
+13. ¿Por qué una prueba que espera a un hilo en segundo plano debe usar
+    Awaitility y no `Thread.sleep`?
 
 ## Ampliación (opcional)
 
@@ -307,9 +537,11 @@ sobresaliente:
 - **Métricas del archivado.** Añade a `AlmacenExpedientes` un método que
   calcule cuántos expedientes hay archivados por provincia, recorriendo el
   árbol con `Files.walk` y agrupando los resultados.
-- **Vigilante con filtro por extensión.** Amplía
-  `VigilanteBuzonEntrada` para que ignore ficheros temporales o parciales
-  (por ejemplo, los que terminan en `.tmp`) usando un `PathMatcher`.
+- **Filtro con `PathMatcher`.** Sustituye la comprobación de extensión de
+  `VigilanteBuzonEntrada` por un `PathMatcher` configurable (p. ej.
+  `glob:*.csv`) que ignore también ficheros temporales o parciales.
+- **Reintentos.** Si el registro de una multa falla por un error transitorio,
+  reintenta con espera creciente antes de enviar el fichero a `errores/`.
 - **Purga simulada (*dry run*).** Añade a `ServicioPurgaExpedientes` un
   modo que solo informe de qué se purgaría, sin borrar nada, útil para
   verificar la regla antes de aplicarla en serio.
