@@ -249,28 +249,60 @@ sistema de datos de MULTAGAL.
 ### Formato del fichero de captación
 
 En esta unidad cada radar deposita un CSV de texto, en UTF-8, separado por
-`;`, con una línea de cabecera y un registro por vehículo captado:
+`;`, con una línea de cabecera y un registro por vehículo captado. Cada
+registro lleva la información necesaria para construir una `Denuncia` con su
+`Radar`, su `Vehiculo` y su `Infraccion`:
 
 ```text
-idRadar;matricula;fechaHora;velocidadMedida;limiteVia
-R-0042;1234ABC;2026-03-14T10:32:05;87;50
-R-0042;5678DEF;2026-03-14T10:32:41;52;50
-R-0042;9012GHI;2026-03-14T10:33:10;49;50
+idRadar;tipoRadar;ubicacionRadar;limiteVelocidad;fechaHora;lugar;provincia;latitud;longitud;matricula;marca;modelo;tipoVehiculo;velocidadMedida
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:32:05;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;1234ABC;Seat;Ibiza;TURISMO;87
+R-0107;MOVIL;N-640 km 3;100;2026-03-14T11:05:12;N-640 km 3, Lugo;Lugo;43.0097;-7.5568;4455QRS;Yamaha;MT-07;MOTOCICLETA;140
 ```
 
-Solo se sanciona la captación cuya `velocidadMedida` supera `limiteVia`. Para
-esta actividad usa esta tabla simplificada (no es la normativa real):
+| Columna | Se usa para | Validación |
+|---------|-------------|------------|
+| `idRadar` | `Radar.identificador` y `Denuncia.agenteODispositivo` | no vacío |
+| `tipoRadar` | `Radar.tipo` | `FIJO` o `MOVIL` |
+| `ubicacionRadar` | `Radar.ubicacion` | no vacío |
+| `limiteVelocidad` | `Radar.limiteVelocidadControlado` | entero positivo |
+| `fechaHora` | `Denuncia.fechaHora` | ISO-8601 (`yyyy-MM-ddTHH:mm:ss`) |
+| `lugar` | `Denuncia.lugar` | no vacío |
+| `provincia` | directorio de archivado de A1.1 | no vacío |
+| `latitud`, `longitud` | `Denuncia.coordenadas` | decimales con punto; latitud entre -90 y 90, longitud entre -180 y 180 |
+| `matricula` | `Vehiculo.matricula` | no vacío |
+| `marca`, `modelo` | `Vehiculo.marca`, `Vehiculo.modelo` | no vacíos |
+| `tipoVehiculo` | `Vehiculo.tipo` | `TURISMO` o `MOTOCICLETA` |
+| `velocidadMedida` | decidir si hay infracción | entero positivo |
 
-| Exceso sobre el límite | Gravedad | Importe |
-|------------------------|----------|---------|
-| hasta 20 km/h | `LEVE` | 100,00 € |
-| de 21 a 40 km/h | `GRAVE` | 300,00 € |
-| más de 40 km/h | `MUY_GRAVE` | 500,00 € |
+Datos de la `Denuncia` que **no** vienen en el CSV y cómo se completan:
 
-El siguiente fichero de ejemplo contiene registros válidos (de las tres
-gravedades, uno sin superar el límite y otro justo en el límite) y registros
-inválidos (fecha mal formada, velocidad no numérica, columnas de menos y
-velocidad negativa). Úsalo como base de tus pruebas y amplíalo si lo necesitas.
+- `tipoDenunciante` es siempre `RADAR`, y `agenteODispositivo` el `idRadar`.
+- `radarId` / `radar`: se busca el radar por su identificador; si no existe,
+  se da de alta con los datos del CSV.
+- `vehiculoId` / `vehiculo`: se busca por matrícula; si no existe, se da de
+  alta. El resto de sus datos (fecha de matriculación, ITV) quedan sin
+  informar.
+- `infraccionId` / `infraccion`: se obtiene del catálogo según el exceso de
+  velocidad (tabla siguiente).
+- `conductorId` / `conductor`: **nulo**. Un radar capta una matrícula, no una
+  persona; la identificación del conductor es un paso posterior.
+
+Solo se sanciona la captación cuya `velocidadMedida` supera
+`limiteVelocidad`. Para esta actividad usa este catálogo simplificado (no es
+la normativa real), cargado al arrancar en el repositorio en memoria:
+
+| Exceso sobre el límite | Código | Gravedad | Importe | Puntos |
+|------------------------|--------|----------|---------|--------|
+| hasta 20 km/h | `VEL-L` | `LEVE` | 100,00 € | 0 |
+| de 21 a 40 km/h | `VEL-G` | `GRAVE` | 300,00 € | 2 |
+| más de 40 km/h | `VEL-MG` | `MUY_GRAVE` | 500,00 € | 4 |
+
+El siguiente fichero de ejemplo contiene 15 registros: 7 infracciones (de las
+tres gravedades, en dos radares), 2 captaciones que no se sancionan (una por
+debajo del límite y otra justo en el límite) y 6 registros inválidos (fecha
+mal formada, velocidad no numérica, columnas de menos, velocidad negativa,
+tipo de vehículo desconocido y latitud fuera de rango). Úsalo como base de tus
+pruebas y amplíalo si lo necesitas.
 
 <DownloadButton file="plantillas/captaciones-radar-ejemplo.csv" filename="captaciones-radar-ejemplo.csv">
 Descargar CSV de ejemplo
@@ -316,13 +348,15 @@ cambio sin tocar el vigilante.
    1. Espera a que el fichero esté completo (por ejemplo, comprobando que
       su tamaño se mantiene estable; véase la nota del apartado d).
    2. Lee el CSV línea a línea con `Files.newBufferedReader` (UTF-8).
-   3. Valida cada registro (número de columnas, fecha ISO, velocidades
-      numéricas y positivas). Un registro inválido **no aborta** el
+   3. Valida cada registro según la tabla de columnas (número de columnas,
+      enumerados, fecha ISO, rangos de coordenadas, velocidades numéricas y
+      positivas). Un registro inválido **no aborta** el
       fichero: se registra en el log con su número de línea y se continúa.
    4. Descarta las captaciones que no superan el límite.
    5. Por cada captación infractora, **crea y registra el expediente**
-      invocando `ServicioExpedientes.registrar` (A0.4), con gravedad e
-      importe según la tabla anterior, y lo **archiva** con
+      invocando `ServicioExpedientes.registrar` (A0.4), a partir de la
+      `Denuncia` completa (radar, vehículo e infracción resueltos como se
+      indica arriba, conductor nulo) y con el importe del catálogo, y lo **archiva** con
       `AlmacenExpedientes.archivar` (A1.1). Genera el número de
       expediente de forma que dos hilos no puedan repetirlo.
    6. Busca la fotografía `buzon-entrada/fotos/<matricula>_<idRadar>.jpg`
@@ -370,41 +404,46 @@ se invoca el procesador directamente):
 
 1. Un CSV con tres captaciones, una de ellas sin superar el límite, crea
    **exactamente dos** expedientes (`verify(servicio, times(2))`).
-2. Cada gravedad del cuadro produce el importe correcto; cubre los límites
-   de 20/21 y de 40/41 km/h. Un exceso de 0 km/h no sanciona.
-3. Una línea con columnas de menos, fecha mal formada o velocidad no
-   numérica se cuenta como inválida y **no impide** procesar las demás.
-4. Cada expediente registrado se archiva (`InOrder`: primero `registrar`,
+2. Cada tramo del catálogo produce la infracción y el importe correctos;
+   cubre los límites de 20/21 y de 40/41 km/h. Un exceso de 0 km/h no
+   sanciona.
+3. La `Denuncia` creada tiene `tipoDenunciante = RADAR`,
+   `agenteODispositivo` igual al `idRadar`, coordenadas, lugar, radar y
+   vehículo del CSV, y conductor nulo.
+4. Una línea con columnas de menos, fecha mal formada, velocidad no
+   numérica, tipo de vehículo desconocido o coordenadas fuera de rango se
+   cuenta como inválida y **no impide** procesar las demás.
+5. Cada expediente registrado se archiva (`InOrder`: primero `registrar`,
    luego `archivar`).
-5. Un CSV correcto acaba en `procesados/` y deja de estar en el buzón; uno
+6. Un CSV correcto acaba en `procesados/` y deja de estar en el buzón; uno
    ilegible acaba en `errores/`.
-6. Un CSV solo con cabecera o vacío no crea expedientes ni lanza excepción.
-7. Con la foto `<matricula>_<idRadar>.jpg` presente, se pide adjuntarla al
+7. Un CSV solo con cabecera o vacío no crea expedientes ni lanza excepción.
+8. Con la foto `<matricula>_<idRadar>.jpg` presente, se pide adjuntarla al
    expediente correspondiente y deja de estar en `fotos/`.
-8. Sin foto, el expediente se crea igualmente y se cuenta como «sin foto».
-9. La foto de otro radar con la misma matrícula no se asocia a la captación
+9. Sin foto, el expediente se crea igualmente y se cuenta como «sin foto».
+10. La foto de otro radar con la misma matrícula no se asocia a la captación
    (el nombre incluye el radar).
 
 `VigilanteBuzonEntradaTest` (con un directorio `@TempDir` real y un
 procesador simulado):
 
-10. Al copiar un `.csv` en el directorio vigilado, el procesador recibe su
+11. Al copiar un `.csv` en el directorio vigilado, el procesador recibe su
    ruta. Espera el resultado con **Awaitility** (`await().atMost(...)`), no
    con `Thread.sleep`.
-11. Un fichero `.txt` o un `.csv.tmp` depositado no llega al procesador.
-12. Tras depositar dos CSV seguidos, **ambos** llegan al procesador (prueba
+12. Un fichero `.txt` o un `.csv.tmp` depositado no llega al procesador.
+13. Tras depositar dos CSV seguidos, **ambos** llegan al procesador (prueba
    de que se hace `reset()`).
-13. `detener()` cierra el vigilante y el *pool*; el hilo ya no está vivo
+14. `detener()` cierra el vigilante y el *pool*; el hilo ya no está vivo
     (`Thread.isAlive`) pasado un tiempo razonable.
 
 `IngestaBuzonIT` (integración, `@SpringBootTest` con el directorio del buzón
 apuntando a un `@TempDir` mediante `@DynamicPropertySource`):
 
-14. Se deposita el CSV de ejemplo; con Awaitility se comprueba que
+15. Se deposita el CSV de ejemplo; con Awaitility se comprueba que
     `ServicioExpedientes.obtener(...)` encuentra los expedientes esperados,
     que existen sus `.txt` archivados y que el CSV se ha movido a
     `procesados/`.
-15. Se comprueba que la ejecución del procesamiento ocurre en un hilo
+16. Se comprueba que la ejecución del procesamiento ocurre en un hilo
     distinto del hilo del vigilante (por ejemplo, registrando el nombre del
     hilo con un *pool* con `ThreadFactory` propia).
 
@@ -423,7 +462,7 @@ apuntando a un `@TempDir` mediante `@DynamicPropertySource`):
 | 9 | La decisión `take()`/`poll()` está justificada en el diario técnico |
 | 10 | El endpoint de estado refleja si el vigilante está activo, el último fichero detectado y los contadores |
 | 11 | La fotografía `<matricula>_<idRadar>.jpg` se asocia al expediente de su captación y se archiva junto a su `.txt`; sin foto, el expediente se crea igualmente y queda contado |
-| 12 | Las pruebas 1 a 15 existen y pasan con `./mvnw test`; ninguna usa `Thread.sleep` para esperar |
+| 12 | Las pruebas 1 a 16 existen y pasan con `./mvnw test`; ninguna usa `Thread.sleep` para esperar |
 
 :::warning[Concurrencia]
 `ServicioExpedientes` y `RepositorioExpedientesMemoria` serán invocados

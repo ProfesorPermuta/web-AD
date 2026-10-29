@@ -1,13 +1,16 @@
-idRadar;matricula;fechaHora;velocidadMedida;limiteVia
-R-0042;1234ABC;2026-03-14T10:32:05;87;50
-R-0042;5678DEF;2026-03-14T10:32:41;52;50
-R-0042;9012GHI;2026-03-14T10:33:10;49;50
-R-0042;3456JKL;2026-03-14T10:34:22;70;50
-R-0042;7890MNP;2026-03-14T10:35:03;71;50
-R-0042;2468RST;2026-03-14T10:36:47;91;50
-R-0042;1357VWX;2026-03-14T10:37:15;50;50
-R-0042;8642BCD;14/03/2026 10:38;65;50
-R-0042;9753FGH;2026-03-14T10:39:30;rapido;50
-R-0042;4321JKM
-R-0042;6789LMN;2026-03-14T10:41:09;-20;50
-R-0042;1122PRS;2026-03-14T10:42:55;120;100
+idRadar;tipoRadar;ubicacionRadar;limiteVelocidad;fechaHora;lugar;provincia;latitud;longitud;matricula;marca;modelo;tipoVehiculo;velocidadMedida
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:32:05;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;1234ABC;Seat;Ibiza;TURISMO;87
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:32:41;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;5678DEF;Renault;Clio;TURISMO;52
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:33:10;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;9012GHI;Toyota;Corolla;TURISMO;49
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:34:22;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;3456JKL;Ford;Focus;TURISMO;70
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:35:03;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;7890MNP;Peugeot;208;TURISMO;71
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:36:47;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;2468RST;Volkswagen;Golf;TURISMO;91
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:37:15;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;1357VWX;Opel;Corsa;TURISMO;50
+R-0042;FIJO;Ronda de Outeiro;50;14/03/2026 10:38;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;8642BCD;Citroën;C3;TURISMO;65
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:39:30;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;9753FGH;Kia;Rio;TURISMO;rapido
+R-0042;FIJO;Ronda de Outeiro
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:41:09;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;6789LMN;Fiat;Panda;TURISMO;-20
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:42:30;Ronda de Outeiro 120, A Coruña;A Coruña;43.3623;-8.4115;3141PQR;Mercedes;Sprinter;AUTOBUS;80
+R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:43:12;Ronda de Outeiro 120, A Coruña;A Coruña;143.3623;-8.4115;2718STU;Honda;Civic;TURISMO;65
+R-0107;MOVIL;N-640 km 3;100;2026-03-14T11:05:12;N-640 km 3, Lugo;Lugo;43.0097;-7.5568;4455QRS;Yamaha;MT-07;MOTOCICLETA;140
+R-0107;MOVIL;N-640 km 3;100;2026-03-14T11:07:48;N-640 km 3, Lugo;Lugo;43.0097;-7.5568;6677TUV;Skoda;Octavia;TURISMO;120
