@@ -1,0 +1,6 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "workbench.editorAssociations": {
+        "file:/C:/Users/permu/Documents/acceso a datos/static/plantillas/captaciones-radar-ejemplo.csv": "default"
+    }
+}

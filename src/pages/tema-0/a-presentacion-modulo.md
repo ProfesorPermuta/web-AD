@@ -230,6 +230,7 @@ dominio esbozado y el repositorio publicado.
 | [j](/tema-0/j-actividades) | Actividades A0.1 – A0.6 |
 | [k](/tema-0/k-chuleta-anotaciones) | Chuleta de anotaciones: Lombok y Spring Framework |
 | [l](/tema-0/l-mappers-mapstruct) | Mappers con MapStruct |
+| [m](/tema-0/m-configuracion-properties) | Configuración tipada con `@ConfigurationProperties` |
 
 <NextPageButton to="/tema-0/b-proyecto-multagal">
 El proyecto MULTAGAL

@@ -457,6 +457,6 @@ Hay dos métodos que podrían convertir el mismo par de tipos. Distínguelos
 con `@Named` y `qualifiedByName`, o elimina el que sobra.
 :::
 
-<NextPageButton to="/tema-1/a-presentacion-tema">
-Empezar la UD1
+<NextPageButton to="/tema-0/m-configuracion-properties">
+Configuración tipada con @ConfigurationProperties
 </NextPageButton>
