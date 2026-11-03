@@ -794,31 +794,6 @@ A1.2 y A1.3 actualizado para lanzar excepciones de dominio en lugar de
 excepciones de `java.nio.file` sin traducir, junto con las pruebas
 descritas a continuación.
 
-### Pruebas unitarias
-
-`MultagalExceptionTest` y pruebas de traducción (JUnit 5 + AssertJ,
-`@TempDir`):
-
-1. `ExpedienteNoEncontradoException` y `AlmacenamientoExpedienteException`
-   son instancias de `MultagalException` y de `RuntimeException`.
-2. Una excepción de almacenamiento creada con una `IOException` como causa
-   la conserva (`getCause()`). Su mensaje contiene la operación y el número
-   de expediente, pero **no** un fragmento de ruta física que aparezca en el
-   mensaje de la causa (por ejemplo, crea la `IOException` con el texto
-   `/srv/datos/privado/EXP-1.txt: acceso denegado` y comprueba que el
-   mensaje de la excepción de dominio no contiene `/srv`).
-3. `AlmacenExpedientes.archivar` sobre un destino imposible (por ejemplo,
-   un fichero donde debería haber un directorio) lanza
-   `AlmacenamientoExpedienteException` con la `IOException` original como
-   causa, no la `IOException` directamente.
-4. `AlmacenExpedientes.buscar` de un expediente inexistente lanza
-   `ExpedienteNoEncontradoException`.
-5. Un fallo de E/S durante la purga (`ServicioPurgaExpedientes`) se
-   traduce a la excepción de dominio (por ejemplo, un fichero de expediente
-   ilegible).
-6. `ProcesadorCapturas` ante un CSV ilegible no propaga la excepción al
-   hilo del *pool*: la traduce, la registra y mueve el fichero a `errores/`.
-
 ### Criterios de aceptación
 
 | # | Criterio |
