@@ -1,146 +1,578 @@
 ---
 title: Excepciones propias y gestión de rutas por configuración
-description: Excepciones comprobadas y no comprobadas, try-with-resources, diseño de una jerarquía de excepciones de dominio y externalización de rutas con @Value y @ConfigurationProperties.
+description: Qué es una excepción, checked frente a unchecked, excepciones propias, try-catch-finally, try-with-resources, handler global en Spring Boot, logs y externalización de rutas con @Value y @ConfigurationProperties.
 ---
 
 import NextPageButton from '@site/src/components/NextPageButton';
 
 # Excepciones propias y gestión de rutas por configuración
 
+## Qué es una excepción
+
+Una **excepción** es un objeto que interrumpe el flujo normal del programa y
+pasa de un método al que lo llamó, y así sucesivamente, hasta que alguien la
+captura.
+
+Imagina que `main` llama a `leer()` y esta a `parsear()`, y dentro de
+`parsear()` se ejecuta `Integer.parseInt("abc")`:
+
+```java
+public static void main(String[] args) {
+    leer();
+}
+
+static void leer() {
+    parsear("abc");
+}
+
+static void parsear(String texto) {
+    int n = Integer.parseInt(texto); // lanza NumberFormatException
+}
+```
+
+La excepción sale de `parsear()` y **recorre la pila de llamadas**: cada
+método que no la captura queda abortado. Si llega a `main` sin que nadie la
+capture, el programa se detiene y la consola muestra el *stack trace*.
+
+```mermaid
+flowchart LR
+    P["parsear()<br/>lanza la excepción"] --> L["leer()<br/>no captura"]
+    L --> M["main()<br/>no captura"]
+    M --> S["El programa se detiene<br/>y muestra el stack trace"]
+```
+
+### Anatomía de una excepción
+
+Las excepciones pueden producirlas la propia JVM o el código con `throw`:
+
+```java
+int x = 10 / 0; // la JVM lanza ArithmeticException
+
+if (edad < 0) {
+    throw new IllegalArgumentException("edad negativa");
+}
+```
+
+Todo objeto excepción lleva tres cosas: el **tipo** (la clase), el
+**mensaje** y el **stack trace** (la secuencia de métodos por los que pasó).
+
+:::info
+`throw` **lanza** una excepción; `catch` la **captura**. El resto del tema
+desarrolla qué hacer con cada una de las dos mitades.
+:::
+
 ## Comprobadas frente a no comprobadas
 
-Java distingue dos familias de excepciones:
+Todas las excepciones cuelgan de `Throwable`:
+
+```mermaid
+classDiagram
+    Throwable <|-- Error
+    Throwable <|-- Exception
+    Exception <|-- IOException
+    Exception <|-- RuntimeException
+    RuntimeException <|-- NullPointerException
+    RuntimeException <|-- IllegalArgumentException
+```
 
 | | Comprobadas (*checked*) | No comprobadas (*unchecked*) |
 |---|---|---|
 | Superclase | `Exception` (que no sea `RuntimeException`) | `RuntimeException` |
 | El compilador obliga a... | capturarlas o declararlas con `throws` | nada; son opcionales de capturar |
-| Ejemplo típico en E/S | `IOException`, `NoSuchFileException` | `NullPointerException`, `IllegalArgumentException` |
-| Uso habitual | errores **recuperables**, externos al programa (el disco, la red) | errores de **programación** o de estado interno |
-
-Casi todas las excepciones de `java.nio.file` son comprobadas: el
-compilador te obliga a decidir qué hacer con ellas en el momento de escribir
-el código, no a descubrirlo en producción.
-
-## `try-with-resources`
-
-Cualquier recurso que implemente `AutoCloseable` (un `DirectoryStream`, un
-`SeekableByteChannel`, un `WatchService`...) debe abrirse con
-`try-with-resources`, que garantiza el cierre incluso si se lanza una
-excepción:
+| Ejemplo típico | `IOException`, `NoSuchFileException` | `NullPointerException`, `IllegalArgumentException` |
+| Cuándo fallan | el código **no compila** si no se tratan | compilan y fallan **al ejecutar** |
 
 ```java
-try (var canal = Files.newByteChannel(fichero)) {
-    // usar el canal
-} catch (IOException e) {
-    // el canal ya se ha cerrado automáticamente al llegar aquí
-    throw new RuntimeException("No se pudo procesar el fichero", e);
-}
+// Checked: no compila sin try/catch o throws IOException
+String texto = Files.readString(Path.of("datos.txt"));
+
+// Unchecked: compila sin problema y falla al ejecutar
+int n = Integer.parseInt("x");
 ```
 
-Se pueden declarar varios recursos en la misma cláusula, separados por
-`;`; se cierran en **orden inverso** al de apertura:
+`Error` representa fallos de la JVM, como `OutOfMemoryError`. **No se
+capturan**: el programa no puede hacer nada razonable al respecto.
 
-```java
-try (var entrada = Files.newByteChannel(origen);
-     var salida = Files.newByteChannel(destino, StandardOpenOption.WRITE)) {
-    // ...
-}
-```
-
-:::danger
-Cerrar un recurso manualmente en un bloque `finally` escrito a mano es
-propenso a errores (olvidar el `finally`, no comprobar si el recurso llegó
-a abrirse, perder la excepción original si `close()` también falla).
-`try-with-resources` existe precisamente para eliminar esa clase de fallos;
-en código nuevo no hay motivo para no usarlo.
+:::tip
+Para decidir entre checked y unchecked pregúntate: **¿puede el llamador hacer
+algo razonable ante este fallo?** Si sí (reintentar, usar otro fichero,
+avisar al usuario), checked; si no (un error de programación), unchecked.
 :::
 
-## Por qué no basta con propagar `IOException`
+Casi todas las excepciones de `java.nio.file` son comprobadas: el compilador
+te obliga a decidir qué hacer con ellas al escribir el código, no a
+descubrirlo en producción.
 
-Dejar que `IOException` (y sus subclases) se propaguen tal cual hasta la
-capa que atiende una petición tiene dos problemas:
+## Excepciones propias
 
-1. **Fuga de detalles de infraestructura.** La capa que llama no debería
-   necesitar saber si el dato venía de un fichero, una base de datos o una
-   API externa; solo le interesa si la operación de negocio pudo hacerse o
-   no, y por qué.
-2. **Imposibilidad de reaccionar de forma distinta según el caso.** No es
-   lo mismo que un fichero no exista (quizá se pueda crear) a que falten
-   permisos (no se puede hacer nada sin intervención externa), y
-   `IOException` no distingue eso con claridad para quien la captura genéricamente.
+Una excepción genérica como `RuntimeException("no existe")` no dice **qué**
+ocurrió ni **qué datos** importan. Una excepción propia es una clase más,
+y su valor está en los datos que lleva.
 
-La solución es **traducir** las excepciones de bajo nivel a una **jerarquía
-de excepciones propia**, expresada en términos del dominio de la
-aplicación.
-
-## Diseñar una jerarquía de excepciones de dominio
-
-Un diseño habitual parte de una excepción base **no comprobada** para el
-dominio, con subclases que distinguen los casos relevantes para quien las
-captura:
+### Versión mínima
 
 ```java
-// Excepción base del dominio de la aplicación.
-// No comprobada: quien no necesite tratarla caso por caso no está
-// obligado a declararla ni a capturarla.
-public class AlmacenamientoException extends RuntimeException {
-    public AlmacenamientoException(String mensaje, Throwable causa) {
-        super(mensaje, causa);
-    }
-}
-
-public class RecursoNoEncontradoException extends AlmacenamientoException {
-    public RecursoNoEncontradoException(String mensaje, Throwable causa) {
-        super(mensaje, causa);
-    }
-}
-
-public class PermisoDenegadoException extends AlmacenamientoException {
-    public PermisoDenegadoException(String mensaje, Throwable causa) {
-        super(mensaje, causa);
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
     }
 }
 ```
 
-Y un punto de traducción, normalmente en la clase que encapsula el acceso
-al sistema de ficheros, que convierte cada excepción de `java.nio.file` en
-la excepción de dominio equivalente:
+### Con atributos
+
+Si la excepción guarda el recurso y el identificador, el mensaje se
+construye dentro de ella y quien la lanza solo aporta los datos:
 
 ```java
-import java.nio.file.NoSuchFileException;
-import java.nio.file.AccessDeniedException;
-import java.io.IOException;
+public class ResourceNotFoundException extends RuntimeException {
 
-public Documento leer(Path ruta) {
-    try {
-        String contenido = Files.readString(ruta);
-        return new Documento(ruta.getFileName().toString(), contenido);
-    } catch (NoSuchFileException e) {
-        throw new RecursoNoEncontradoException("No existe el fichero: " + ruta, e);
-    } catch (AccessDeniedException e) {
-        throw new PermisoDenegadoException("Sin permisos para leer: " + ruta, e);
-    } catch (IOException e) {
-        throw new AlmacenamientoException("Error de E/S al leer: " + ruta, e);
+    private final String resource;
+    private final Object id;
+
+    public ResourceNotFoundException(String resource, Object id) {
+        super(resource + " no encontrado con id " + id);
+        this.resource = resource;
+        this.id = id;
+    }
+
+    public String getResource() { return resource; }
+    public Object getId() { return id; }
+}
+```
+
+```java
+throw new ResourceNotFoundException("Alumno", 7);
+```
+
+### Encadenar la causa
+
+Cuando una excepción se origina por otra, pásala como **causa** con
+`super(message, cause)`. Se recupera con `getCause()` y aparece en el stack
+trace como «Caused by»:
+
+```java
+public class StorageException extends RuntimeException {
+    public StorageException(String message, Throwable cause) {
+        super(message, cause);
     }
 }
 ```
 
 :::tip
-Conserva siempre la excepción original como **causa** (segundo argumento del
-constructor, propagado con `super(mensaje, causa)`). Perder la causa
-original hace mucho más difícil depurar el problema real cuando llegue a
-producción.
+Conserva siempre la excepción original como causa. Perderla hace mucho más
+difícil depurar el problema real cuando llegue a producción.
 :::
 
-:::info
-Elegir que la jerarquía de dominio sea **no comprobada** es una decisión de
-diseño extendida en aplicaciones modernas: evita que cada capa intermedia
-tenga que declarar `throws` para excepciones que en la mayoría de los casos
-solo puede propagar, y deja la decisión de "capturar o no" a las capas que
-de verdad pueden reaccionar (por ejemplo, la que traduce errores a una
-respuesta para quien hizo la petición).
+### Jerarquía de dominio
+
+Se suele partir de una excepción base del dominio y subclases por cada caso
+que quien captura necesite distinguir:
+
+```mermaid
+classDiagram
+    RuntimeException <|-- StorageException
+    StorageException <|-- ResourceNotFoundException
+    StorageException <|-- AccessDeniedStorageException
+```
+
+```java
+public class StorageException extends RuntimeException {
+    public StorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+public class DocumentNotFoundException extends StorageException {
+    public DocumentNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+public class AccessDeniedStorageException extends StorageException {
+    public AccessDeniedStorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
+
+La clase que encapsula el acceso al sistema de ficheros es el punto natural
+para **traducir** las excepciones de `java.nio.file` a las del dominio:
+
+```java
+public Document read(Path path) {
+    try {
+        String content = Files.readString(path);
+        return new Document(path.getFileName().toString(), content);
+    } catch (NoSuchFileException e) {
+        throw new DocumentNotFoundException("No existe el fichero: " + path, e);
+    } catch (AccessDeniedException e) {
+        throw new AccessDeniedStorageException("Sin permisos para leer: " + path, e);
+    } catch (IOException e) {
+        throw new StorageException("Error de E/S al leer: " + path, e);
+    }
+}
+```
+
+Así la capa que llama no necesita saber si el dato venía de un fichero, una
+base de datos o una API, y puede reaccionar de forma distinta según el caso.
+
+### ¿Checked o unchecked?
+
+Al crear la excepción eliges de qué clase extiende:
+
+- `Exception`: **checked**. Obliga a todos los llamadores a tratarla.
+- `RuntimeException`: **unchecked**. Evita `throws` en cada capa intermedia y
+  deja la decisión de capturar a la capa que de verdad puede reaccionar.
+
+En aplicaciones modernas lo habitual es que la jerarquía de dominio sea
+**no comprobada**.
+
+## try-catch-finally y throws
+
+### try/catch
+
+La excepción se detiene en el `catch` y el programa **continúa** después:
+
+```java
+try {
+    int n = Integer.parseInt(texto);
+    System.out.println("Número: " + n);
+} catch (NumberFormatException e) {
+    System.out.println("No es un número: " + e.getMessage());
+}
+System.out.println("El programa sigue");
+```
+
+### Varios catch
+
+Se evalúan en orden, así que van **de más específico a más general**. Si
+varias excepciones se tratan igual, el *multi-catch* las une con `|`:
+
+```java
+try {
+    procesar(ruta);
+} catch (NoSuchFileException | AccessDeniedException e) {
+    System.out.println("No se puede acceder al fichero");
+} catch (IOException e) {
+    System.out.println("Error de E/S");
+}
+```
+
+:::danger
+Poner `catch (Exception e)` **antes** de una subclase no compila: el
+compilador avisa de que la excepción *has already been caught*.
 :::
+
+### finally
+
+El bloque `finally` se ejecuta **siempre**, en las tres rutas posibles:
+
+| Ruta | ¿Se ejecuta `finally`? |
+|---|---|
+| El `try` termina sin error | Sí |
+| Hay error y lo captura un `catch` | Sí |
+| Hay error y nadie lo captura | Sí, justo antes de propagarse |
+
+```java
+try {
+    operacion();
+} catch (IOException e) {
+    System.out.println("Error capturado");
+} finally {
+    System.out.println("Esto se ejecuta siempre");
+}
+```
+
+### throws
+
+`throws` **delega** la responsabilidad en el llamador: el método declara que
+puede lanzar la excepción y no la trata.
+
+```java
+static String leer(Path ruta) throws IOException {
+    return Files.readString(ruta);
+}
+```
+
+| Palabra | Qué hace |
+|---|---|
+| `throw` | **lanza** una excepción concreta (`throw new ...`) |
+| `throws` | **declara** en la firma qué excepciones puede lanzar el método |
+
+:::tip
+Captura donde sepas qué hacer con el error; si no lo sabes, propaga.
+:::
+
+## try-with-resources
+
+### El problema de `finally`
+
+Cerrar un recurso a mano con `finally` es largo y frágil:
+
+```java
+BufferedReader br = null;
+try {
+    br = Files.newBufferedReader(ruta);
+    System.out.println(br.readLine());
+} catch (IOException e) {
+    System.out.println("Error: " + e.getMessage());
+} finally {
+    if (br != null) {
+        try {
+            br.close();          // close() también puede lanzar IOException
+        } catch (IOException e) {
+            // ¿qué hacemos aquí?
+        }
+    }
+}
+```
+
+Hay que inicializar a `null`, comprobar `null` y envolver `close()` en otro
+`try/catch`, porque también puede fallar.
+
+### La solución
+
+```java
+try (BufferedReader br = Files.newBufferedReader(ruta)) {
+    System.out.println(br.readLine());
+} catch (IOException e) {
+    System.out.println("Error: " + e.getMessage());
+}
+// br ya está cerrado, haya habido excepción o no
+```
+
+La línea de tiempo es siempre: **abrir → usar → cerrar**, y el cierre ocurre
+aunque haya excepción.
+
+### Varios recursos
+
+Se declaran separados por `;` y se cierran en **orden inverso** al de
+apertura:
+
+```java
+try (var entrada = Files.newBufferedReader(origen);
+     var salida = Files.newBufferedWriter(destino)) {
+    salida.write(entrada.readLine());
+}
+// primero se cierra salida, después entrada
+```
+
+### Recursos propios con `AutoCloseable`
+
+Cualquier clase que implemente `AutoCloseable` puede usarse en el `try ( … )`:
+
+```mermaid
+classDiagram
+    class AutoCloseable {
+        <<interface>>
+        +close()
+    }
+    class Conexion
+    AutoCloseable <|.. Conexion
+```
+
+```java
+record Conexion(String url) implements AutoCloseable {
+    @Override
+    public void close() {
+        System.out.println("Cerrando " + url);
+    }
+}
+
+try (var c = new Conexion("jdbc:h2:mem:test")) {
+    // usar la conexión
+}
+```
+
+### Si `close()` también falla
+
+Se conserva la **excepción original** y la del cierre queda como
+**suprimida** (`e.getSuppressed()`), en lugar de pisarla como ocurría con
+`finally`.
+
+:::info
+Todo lo que abras dentro del `try ( … )` se cierra solo. En código nuevo no
+hay motivo para cerrar recursos a mano.
+:::
+
+## Handler global en Spring Boot
+
+### El problema
+
+Una excepción sin tratar llega al cliente como un **500 con traza**, y poner
+`try/catch` en cada controlador es repetitivo. La solución es que el
+controlador **lance sin capturar** y que un único componente decida la
+respuesta.
+
+```java
+@RestController
+@RequestMapping("/alumnos")
+public class AlumnoController {
+
+    private final AlumnoService service;
+
+    public AlumnoController(AlumnoService service) {
+        this.service = service;
+    }
+
+    @GetMapping("/{id}")
+    public Alumno buscar(@PathVariable long id) {
+        return service.buscar(id); // lanza ResourceNotFoundException si no existe
+    }
+}
+```
+
+### `ErrorResponse`
+
+Un `record` con el cuerpo JSON que recibirá el cliente:
+
+```java
+public record ErrorResponse(int status, String message, LocalDateTime timestamp) {}
+```
+
+### `GlobalExceptionHandler`
+
+`@RestControllerAdvice` equivale a `@ControllerAdvice` + `@ResponseBody`.
+Cada método con `@ExceptionHandler` atiende un tipo de excepción:
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        var body = new ErrorResponse(404, ex.getMessage(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    // Red de seguridad para cualquier otra excepción
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        var body = new ErrorResponse(500, "Error interno del servidor", LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    }
+}
+```
+
+Spring elige siempre el handler **más específico**: una
+`ResourceNotFoundException` va al primero y cualquier otra al segundo.
+
+```mermaid
+flowchart LR
+    C["Cliente"] --> D["DispatcherServlet"]
+    D --> K["Controlador"]
+    K -- "lanza excepción" --> H["GlobalExceptionHandler"]
+    H --> J["JSON 404"]
+    J --> C
+```
+
+:::tip
+El controlador lanza, el handler decide la respuesta.
+:::
+
+## Logs en el handler
+
+El handler responde al cliente, pero **el equipo no se entera** del error si
+no se registra.
+
+### `@Slf4j` y niveles
+
+Lombok genera el campo `log` con `@Slf4j`:
+
+```java
+@Slf4j
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
+        log.warn("Recurso no encontrado: {}", ex.getMessage());
+        // ...
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        log.error("Error inesperado: {}", ex.getMessage(), ex);
+        // ...
+    }
+}
+```
+
+| Nivel | Cuándo |
+|---|---|
+| `WARN` | error del **cliente** (404, datos inválidos) |
+| `ERROR` | fallo **nuestro** (500) |
+
+Dos buenas prácticas:
+
+- Usa `{}` como marcador en lugar de concatenar cadenas.
+- Pasa la excepción como **último argumento** para que salga la traza
+  completa.
+
+### Registrar a fichero y a consola a la vez
+
+En `application.yml`:
+
+```yaml
+logging:
+  file:
+    name: logs/app.log
+  level:
+    root: INFO
+    com.ejemplo: DEBUG
+```
+
+Y en `logback-spring.xml`, un `ConsoleAppender`, un `RollingFileAppender` con
+rotación diaria y un `root` que referencia ambos:
+
+```xml
+<configuration>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>logs/app.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>7</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>
+```
+
+Un `log.error` sale ahora a **dos destinos** con las mismas líneas: la
+consola (`java -jar app.jar`) y el fichero (`tail -f logs/app.log`).
+
+:::warning
+Añade `logs/` al `.gitignore`: los ficheros de log no se versionan.
+:::
+
+El cliente recibe un JSON limpio y **nunca ve la traza**; el log guarda el
+detalle para quien deba investigarlo.
+
+### Repaso
+
+```mermaid
+flowchart LR
+    A["Qué es"] --> B["Checked / unchecked"]
+    B --> C["Propias"]
+    C --> D["try / catch"]
+    D --> E["Recursos"]
+    E --> F["Handler"]
+    F --> G["Logs"]
+```
 
 ## Gestión de rutas por configuración
 
@@ -150,7 +582,7 @@ la ruta a la configuración de la aplicación.
 
 ### `@Value`
 
-Para un valor suelto, `@Value` lee una propiedad de configuración e la
+Para un valor suelto, `@Value` lee una propiedad de configuración y la
 inyecta directamente:
 
 ```java
