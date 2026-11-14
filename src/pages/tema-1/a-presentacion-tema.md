@@ -71,7 +71,7 @@ referencia histórica de por qué existe la API moderna.
 | [e](/tema-1/e-acceso-secuencial-aleatorio) | Acceso secuencial frente a acceso aleatorio |
 | [f](/tema-1/f-excepciones-config) | Excepciones propias y gestión de rutas por configuración |
 | [g](/tema-1/g-streaming-binarios) | Streaming de ficheros binarios grandes |
-| [h](/tema-1/h-actividades) | Actividades A1.1 – A1.4 |
+| [h](/tema-1/h-actividades) | Actividades A1.1 – A1.5 |
 
 Los ejemplos de código de esta unidad trabajan sobre ficheros y directorios
 genéricos (documentos de texto, registros de log, directorios de prueba).

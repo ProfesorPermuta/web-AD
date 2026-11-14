@@ -1,19 +1,20 @@
 ---
 title: 'Actividades de la UD1'
-description: Actividades A1.1 a A1.4 de gestión de ficheros y directorios sobre el proyecto MULTAGAL, con las pruebas a implementar y sus criterios de aceptación.
+description: Actividades A1.1 a A1.5 de gestión de ficheros y directorios sobre el proyecto MULTAGAL, con las pruebas a implementar y sus criterios de aceptación.
 ---
 
 import DownloadButton from '@site/src/components/DownloadButton';
 
 # Actividades de la UD1
 
-Cuatro actividades, 8 horas. Al terminarlas tendrás en MULTAGAL un componente
+Cinco actividades, 8 horas. Al terminarlas tendrás en MULTAGAL un componente
 de archivado jerárquico de expedientes, un servicio de purga por
-prescripción, un vigilante de directorio que procesa en segundo plano los CSV
-de captación de los radares y registra las multas detectadas, y una
-jerarquía de excepciones propia del dominio, todo ello accesible a través de
-los controladores REST correspondientes y cubierto por pruebas unitarias y de
-integración.
+prescripción, un servicio que crea denuncias a partir de una petición
+(`DenunciaRequest`) con su repositorio, un vigilante de directorio que
+procesa en segundo plano los CSV de captación de los radares y registra las
+multas detectadas, y una jerarquía de excepciones propia del dominio, todo
+ello accesible a través de los controladores REST correspondientes y cubierto
+por pruebas unitarias y de integración.
 
 :::info[Pruebas]
 Cada actividad lista las pruebas que debes implementar. Se escriben con
@@ -33,7 +34,7 @@ una rama `hito/ud1-ficheros` fusionada en `main`. Evalúa **RA1**.
 
 ## Decisiones comunes a toda la unidad
 
-Estas decisiones valen para las cuatro actividades. Están fijadas aquí para
+Estas decisiones valen para las cinco actividades. Están fijadas aquí para
 que todas las soluciones coincidan en lo que se puede observar desde fuera
 (rutas, códigos HTTP, formato de los documentos); lo que no se fija aquí
 (capas, nombres internos, estructura de clases) lo decides tú y lo
@@ -41,17 +42,18 @@ justificas en el diario técnico.
 
 ### Orden de trabajo recomendado
 
-A1.4 no es una actividad aislada: es una **revisión transversal**. Empieza
-por diseñar la jerarquía de excepciones (tareas 1 y 4 de A1.4 y sus pruebas 1
-y 2), construye después A1.1, A1.2 y A1.3 lanzando ya excepciones de dominio,
-y cierra con A1.4 comprobando que ninguna `IOException` se escapa sin
-traducir (tareas 2 y 3 y pruebas 3 a 6).
+A1.5 no es una actividad aislada: es una **revisión transversal**. Empieza
+por diseñar la jerarquía de excepciones (tareas 1 y 4 de A1.5 y sus pruebas 1
+y 2), construye después A1.1, A1.2, A1.3 y A1.4 lanzando ya excepciones de
+dominio, y cierra con A1.5 comprobando que ninguna `IOException` se escapa sin
+traducir (tareas 2 y 3 y pruebas 3 a 6). A1.3 (denuncias) no toca ficheros,
+pero A1.4 depende de ella: constrúyela antes del vigilante.
 
 ### Rutas HTTP
 
 El proyecto ya expone sus recursos bajo el prefijo `/api`. Todos los
 endpoints de esta unidad cuelgan de él (`/api/expedientes/...`,
-`/api/buzon-entrada/...`). Las rutas del enunciado sin `/api` se entienden con
+`/api/denuncias`, `/api/buzon-entrada/...`). Las rutas del enunciado sin `/api` se entienden con
 ese prefijo.
 
 ### Estructura del archivo en disco
@@ -95,7 +97,7 @@ Un único punto (`@RestControllerAdvice`) traduce las excepciones de dominio:
 | `AlmacenamientoExpedienteException` | `500` |
 
 El cuerpo de error es `{"mensaje": "..."}`. Ese mensaje nunca contiene rutas
-físicas del servidor (véase A1.4).
+físicas del servidor (véase A1.5).
 
 ### Formato del documento del expediente
 
@@ -188,7 +190,7 @@ la persona expedientada.
    - `adjuntarFoto(String numeroExpediente, Path rutaFoto)` — **mueve** la
      fotografía (no la copia) y la deja como `<numeroExpediente>.jpg` junto
      al `.txt`. Tras la llamada la foto ya no está en su ubicación original.
-     La usará A1.3.
+     La usará A1.4.
 4. Al cambiar el estado en `mover`, el contenido del documento debe
    reflejar el nuevo estado: regenera el texto desde la plantilla (no
    edites el fichero a base de reemplazos sobre el texto). La foto, si
@@ -257,7 +259,7 @@ directorio `@TempDir` en lugar de rutas reales de tu disco):
    y el importe (dos decimales) con el formato esperado, y se lee
    correctamente en UTF-8 con caracteres como «ñ» y tildes.
 3. `buscar` devuelve la ruta de un expediente archivado en cualquier
-   subcarpeta, y falla con `ExpedienteNoEncontradoException` (A1.4) si no
+   subcarpeta, y falla con `ExpedienteNoEncontradoException` (A1.5) si no
    existe.
 4. `mover` cambia el fichero de carpeta y el texto del documento refleja el
    nuevo estado.
@@ -434,12 +436,149 @@ directorio que los contenía ha quedado vacío.
 
 ---
 
-## A1.3 — Vigilante e ingesta del buzón de entrada de denuncias
+## A1.3 — Servicio de denuncias y su repositorio
+
+**Objetivo:** diseñar el servicio que **crea denuncias** a partir de una
+petición (`DenunciaRequest`) y el repositorio donde se guardan, de modo que A1.4
+pueda registrar las multas detectadas por los radares sin conocer cómo se
+resuelven el radar, el vehículo y la infracción. Esta actividad no toca
+ficheros: es lógica de negocio y persistencia en memoria.
+
+### La petición: `DenunciaRequest`
+
+Un `record` en `dto` con los datos de **una captación de radar**. Es lo que
+recibe `ServicioDenuncias` y lo que más tarde construirá A1.4 a partir de cada
+línea del CSV, de modo que los campos llevan los mismos nombres que las columnas
+de ese fichero:
+
+| Campo | Se usa para | Validación |
+|-------|-------------|------------|
+| `idRadar` | `Radar.identificador` y `Denuncia.agenteODispositivo` | no vacío |
+| `tipoRadar` | `Radar.tipo` | `FIJO` o `MOVIL` (aunque el enumerado tenga más valores, estos son los únicos admitidos) |
+| `ubicacionRadar` | `Radar.ubicacion` | no vacío |
+| `limiteVelocidad` | `Radar.limiteVelocidadControlado` | entero positivo |
+| `fechaHora` | `Denuncia.fechaHora` | no nulo (`LocalDateTime`) |
+| `lugar` | `Denuncia.lugar` | no vacío |
+| `provincia` | `Denuncia.provincia` y directorio de archivado de A1.1 | no vacío |
+| `latitud`, `longitud` | `Denuncia.coordenadas` | latitud entre -90 y 90, longitud entre -180 y 180 |
+| `matricula` | `Vehiculo.matricula` | no vacío |
+| `marca`, `modelo` | `Vehiculo.marca`, `Vehiculo.modelo` | no vacíos |
+| `tipoVehiculo` | `Vehiculo.tipo` | `TURISMO` o `MOTOCICLETA` (los únicos admitidos) |
+| `velocidadMedida` | decidir si hay infracción | entero positivo |
+
+Las restricciones se expresan con Bean Validation, como en el
+[apartado g del tema 0](/tema-0/g-controlador-rest-validacion#el-dto-de-entrada).
+El DTO solo valida la **forma** del dato:
+no consulta ningún repositorio.
+
+### Cómo se completa la denuncia
+
+Datos de la `Denuncia` que **no** vienen en la petición y cómo se obtienen:
+
+- `tipoDenunciante` es siempre `RADAR`, y `agenteODispositivo` el `idRadar`.
+- `radar`: se busca por su identificador; si no existe crea un log con gravedad de error y los datos necesarios para darlo de alta
+- `vehiculo`: se busca por matrícula; si no existe, se da de alta. El resto de
+  sus datos (fecha de matriculación, ITV) quedan sin informar.
+- `infraccion`: se obtiene del catálogo según el exceso de velocidad (tabla
+  siguiente).
+- `conductor`: **nulo**. Un radar capta una matrícula, no una persona; la
+  identificación del conductor es un paso posterior.
+
+Solo se sanciona la captación cuya `velocidadMedida` supera
+`limiteVelocidad`. Para esta actividad usa este catálogo simplificado (no es
+la normativa real).
+
+| Exceso sobre el límite | Código | Gravedad | Importe | Puntos |
+|------------------------|--------|----------|---------|--------|
+| hasta 20 km/h | `VEL-L` | `LEVE` | 100,00 € | 0 |
+| de 21 a 40 km/h | `VEL-G` | `GRAVE` | 300,00 € | 2 |
+| más de 40 km/h | `VEL-MG` | `MUY_GRAVE` | 500,00 € | 4 |
+
+### Tareas
+
+1. Define el `record` `DenunciaRequest` con los campos y restricciones de la
+   tabla anterior.
+2. Define la interfaz `RepositorioDenuncias` en `repository`, con al menos
+   `crear(Denuncia)`, `buscarPorId(UUID)` y `buscarTodos()`, e impleméntala como
+   `RepositorioDenunciasMemoria` con un `ConcurrentHashMap` y `@Repository`,
+   igual que `RepositorioExpedientesMemoria` en A0.4. Es provisional: la
+   UD3 la sustituirá por una implementación JDBC **sin tocar el servicio**.
+3. Define los repositorios auxiliares que necesita la resolución de datos, con
+   el mismo estilo (interfaz + implementación en memoria):
+   - `RepositorioRadares` y `RepositorioVehiculos`, con una operación
+     `buscarOCrear`
+4. Implementa `ServicioDenuncias` en `service`, con **inyección por
+   constructor** de las interfaces anteriores, y con
+   `crear(DenunciaRequest peticion)`, que devuelve `Denuncia`:
+   1. Calcula el exceso. Si no supera el límite, devuelve `Optional.empty()`
+      **sin guardar nada** (ni la denuncia, ni el radar, ni el vehículo).
+   2. Resuelve radar, vehículo e infracción como se indica en
+      [Cómo se completa la denuncia](#cómo-se-completa-la-denuncia).
+   3. Construye la `Denuncia` con un `UUID` nuevo, la guarda con
+      `RepositorioDenuncias.crear` y la devuelve.
+5. Añade `obtener(UUID id)`, que lanza `DenunciaNoEncontradaException`
+   (subclase de `NoEncontradaException`, véase A1.5) si no existe.
+6. Expón el servicio con un `DenunciasController`:
+   - `POST /api/denuncias` — cuerpo `DenunciaRequest` validado con `@Valid`.
+     `201` con un `DenunciaResponse` (identificador, matrícula, código de
+     infracción, gravedad e importe) si hay infracción, `204` si la captación
+     no se sanciona, `400` con el detalle de los campos inválidos.
+   - `GET /api/denuncias/{id}` — devuelve la denuncia, o `404` si no existe.
+
+   El controlador solo delega en `ServicioDenuncias`: no accede a ningún
+   repositorio.
+7. Documenta en el diario técnico por qué `crear` devuelve `Optional` en lugar
+   de lanzar una excepción cuando no hay infracción, y qué cambiaría si más
+   adelante hubiera que guardar también las captaciones no sancionadas.
+
+### Entregable
+
+`DenunciaRequest`, `ServicioDenuncias`, `RepositorioDenuncias` con su
+implementación en memoria, los repositorios auxiliares y el catálogo, el
+`DenunciasController`, y las pruebas descritas a continuación.
+
+### Pruebas unitarias
+
+`ServicioDenunciasTest` (JUnit 5 + AssertJ + Mockito, sin contexto de Spring;
+repositorios simulados):
+
+1. Una captación que no supera el límite, ni siquiera justo en él (exceso 0),
+   devuelve `Optional.empty()` y no guarda nada.
+2. Cada tramo del catálogo produce la infracción correcta; cubre los límites
+   de 20/21 y de 40/41 km/h.
+3. La `Denuncia` creada tiene `tipoDenunciante = RADAR`,
+   `agenteODispositivo` igual al `idRadar`, coordenadas, lugar, provincia,
+   fecha y hora de la petición, y conductor nulo.
+4. Si el radar o el vehículo ya existen, se reutilizan; si no, se dan de alta con
+   los datos de la petición.
+5. La denuncia devuelta es la que se ha guardado (`verify` sobre
+   `RepositorioDenuncias.crear`, una sola vez).
+6. `obtener` de un identificador inexistente lanza
+   `DenunciaNoEncontradaException`.
+
+
+### Criterios de aceptación
+
+| # | Criterio |
+|---|----------|
+| 1 | `DenunciaRequest` valida solo la forma de los datos con Bean Validation y no consulta ningún repositorio |
+| 2 | `ServicioDenuncias` depende de **interfaces** de repositorio, por constructor, y no tiene estado mutable |
+| 3 | La captación que no supera el límite no genera denuncia y no guarda nada |
+| 4 | La infracción, la gravedad y el importe corresponden al tramo del catálogo, con los límites correctos |
+| 5 | La denuncia sale con tipo `RADAR`, conductor nulo y radar y vehículo reutilizados si ya existían |
+| 6 | El alta de radares y vehículos («buscar o dar de alta») es atómica |
+| 7 | Los endpoints devuelven `201`, `204`, `400` y `404` en los casos indicados y el controlador solo delega en el servicio |
+| 8 | Las pruebas 1 a 6 existen, se ejecutan sin Docker ni `@SpringBootTest` y pasan con `./mvnw test` |
+
+---
+
+## A1.4 — Vigilante e ingesta del buzón de entrada de denuncias
 
 **Objetivo:** detectar automáticamente los ficheros CSV de captación
 depositados por los radares con `WatchService`, **procesarlos en un hilo
 distinto al del vigilante** y **registrar cada multa** detectada en el
-sistema de datos de MULTAGAL.
+sistema de datos de MULTAGAL, creando cada denuncia con el `ServicioDenuncias`
+de A1.3.
 
 ### Directorios del buzón
 
@@ -457,9 +596,9 @@ este enunciado. El vigilante crea la estructura al arrancar:
 ### Formato del fichero de captación
 
 En esta unidad cada radar deposita un CSV de texto, en UTF-8, separado por
-`;`, con una línea de cabecera y un registro por vehículo captado. Cada
-registro lleva la información necesaria para construir una `Denuncia` con su
-`Radar`, su `Vehiculo` y su `Infraccion`:
+`;`, con una línea de cabecera y un registro por vehículo captado. Las columnas
+son exactamente los campos de `DenunciaRequest` (A1.3), en este orden, y sus
+validaciones son las de esa tabla:
 
 ```text
 idRadar;tipoRadar;ubicacionRadar;limiteVelocidad;fechaHora;lugar;provincia;latitud;longitud;matricula;marca;modelo;tipoVehiculo;velocidadMedida
@@ -467,47 +606,16 @@ R-0042;FIJO;Ronda de Outeiro;50;2026-03-14T10:32:05;Ronda de Outeiro 120, A Coru
 R-0107;MOVIL;N-640 km 3;100;2026-03-14T11:05:12;N-640 km 3, Lugo;Lugo;43.0097;-7.5568;4455QRS;Yamaha;MT-07;MOTOCICLETA;140
 ```
 
-| Columna | Se usa para | Validación |
-|---------|-------------|------------|
-| `idRadar` | `Radar.identificador` y `Denuncia.agenteODispositivo` | no vacío |
-| `tipoRadar` | `Radar.tipo` | `FIJO` o `MOVIL` (aunque el enumerado tenga más valores, estos son los únicos admitidos) |
-| `ubicacionRadar` | `Radar.ubicacion` | no vacío |
-| `limiteVelocidad` | `Radar.limiteVelocidadControlado` | entero positivo |
-| `fechaHora` | `Denuncia.fechaHora` | ISO-8601 (`yyyy-MM-ddTHH:mm:ss`) |
-| `lugar` | `Denuncia.lugar` | no vacío |
-| `provincia` | `Denuncia.provincia` y directorio de archivado de A1.1 | no vacío |
-| `latitud`, `longitud` | `Denuncia.coordenadas` | decimales con punto; latitud entre -90 y 90, longitud entre -180 y 180 |
-| `matricula` | `Vehiculo.matricula` | no vacío |
-| `marca`, `modelo` | `Vehiculo.marca`, `Vehiculo.modelo` | no vacíos |
-| `tipoVehiculo` | `Vehiculo.tipo` | `TURISMO` o `MOTOCICLETA` (los únicos admitidos) |
-| `velocidadMedida` | decidir si hay infracción | entero positivo |
+Cada línea válida se convierte en un `DenunciaRequest`. Una línea inválida es
+la que no se puede convertir (número de columnas distinto, fecha que no es
+ISO-8601 `yyyy-MM-ddTHH:mm:ss`, valores numéricos mal formados, enumerado
+desconocido) o la que no pasa las validaciones del propio `DenunciaRequest`.
 
-Datos de la `Denuncia` y del `Expediente` que **no** vienen en el CSV y cómo
-se completan:
-
-- `tipoDenunciante` es siempre `RADAR`, y `agenteODispositivo` el `idRadar`.
-- `radarId` / `radar`: se busca el radar por su identificador; si no existe,
-  se da de alta con los datos del CSV.
-- `vehiculoId` / `vehiculo`: se busca por matrícula; si no existe, se da de
-  alta. El resto de sus datos (fecha de matriculación, ITV) quedan sin
-  informar.
-- `infraccionId` / `infraccion`: se obtiene del catálogo según el exceso de
-  velocidad (tabla siguiente).
-- `conductorId` / `conductor`: **nulo**. Un radar capta una matrícula, no una
-  persona; la identificación del conductor es un paso posterior.
-- Del `Expediente`: `instructor` fijo («Ingesta automática de radares»),
-  `importe` el del catálogo y `fechaIncoacion` la fecha de hoy
-  (`LocalDate.now()`).
-
-Solo se sanciona la captación cuya `velocidadMedida` supera
-`limiteVelocidad`. Para esta actividad usa este catálogo simplificado (no es
-la normativa real), cargado al arrancar en el repositorio en memoria:
-
-| Exceso sobre el límite | Código | Gravedad | Importe | Puntos |
-|------------------------|--------|----------|---------|--------|
-| hasta 20 km/h | `VEL-L` | `LEVE` | 100,00 € | 0 |
-| de 21 a 40 km/h | `VEL-G` | `GRAVE` | 300,00 € | 2 |
-| más de 40 km/h | `VEL-MG` | `MUY_GRAVE` | 500,00 € | 4 |
+Lo que **no** viene en el CSV (tipo de denunciante, conductor, radar y vehículo
+resueltos, infracción) lo completa `ServicioDenuncias`. Del `Expediente` que
+crea el procesador: `instructor` fijo («Ingesta automática de radares»),
+`importe` el de la infracción de la denuncia y `fechaIncoacion` la fecha de
+hoy (`LocalDate.now()`).
 
 El siguiente fichero de ejemplo contiene 15 registros: 7 infracciones (de las
 tres gravedades, en dos radares), 2 captaciones que no se sancionan (una por
@@ -579,16 +687,18 @@ ilegible no deje registros a medio procesar.
       defecto). Si tras 20 comprobaciones sigue cambiando, se trata como
       ilegible y va a `errores/`.
    2. Lee el CSV línea a línea con `Files.newBufferedReader` (UTF-8).
-   3. Valida cada registro según la tabla de columnas (número de columnas,
-      enumerados, fecha ISO, rangos de coordenadas, velocidades numéricas y
-      positivas). Un registro inválido **no aborta** el
-      fichero: se registra en el log con su número de línea y se continúa.
-   4. Descarta las captaciones que no superan el límite.
-   5. Por cada captación infractora, **crea y registra el expediente**
-      invocando `ServicioExpedientes.registrar` (A0.4), a partir de la
-      `Denuncia` completa (radar, vehículo e infracción resueltos como se
-      indica arriba, conductor nulo) y con el importe del catálogo, y lo
-      **archiva** con `AlmacenExpedientes.archivar` (A1.1). Si el registro o
+   3. Convierte cada línea en un `DenunciaRequest` y lo valida con Bean
+      Validation (número de columnas, enumerados, fecha ISO, rangos de
+      coordenadas, velocidades numéricas y positivas). Un registro inválido
+      **no aborta** el fichero: se registra en el log con su número de línea y
+      se continúa.
+   4. Entrega cada petición válida a `ServicioDenuncias.crear` (A1.3). Si
+      devuelve `Optional.empty()`, la captación no supera el límite: se
+      descarta y se cuenta como tal.
+   5. Por cada denuncia creada, **crea y registra el expediente**
+      invocando `ServicioExpedientes.registrar` (A0.4), con el importe de la
+      infracción de la denuncia, y lo **archiva** con
+      `AlmacenExpedientes.archivar` (A1.1). Si el registro o
       el archivado de una infracción falla con una excepción de dominio, esa
       infracción se cuenta como **fallida**, se registra en el log y se
       continúa con las demás; el registro ya hecho no se deshace.
@@ -645,20 +755,22 @@ descritas a continuación.
 
 ### Pruebas unitarias
 
-`ProcesadorCapturasTest` (JUnit 5 + AssertJ, `@TempDir`; `ServicioExpedientes`
-y `AlmacenExpedientes` simulados con Mockito; sin hilos ni `WatchService`:
+`ProcesadorCapturasTest` (JUnit 5 + AssertJ, `@TempDir`; `ServicioDenuncias`,
+`ServicioExpedientes` y `AlmacenExpedientes` simulados con Mockito; sin hilos
+ni `WatchService`:
 se invoca el procesador directamente. Recuerda que el `registrar` simulado
 debe imitar al real, como se indica en
 [Entorno de pruebas](#entorno-de-pruebas)):
 
-1. Un CSV con tres captaciones, una de ellas sin superar el límite, crea
-   **exactamente dos** expedientes (`verify(servicio, times(2))`).
-2. Cada tramo del catálogo produce la infracción y el importe correctos;
-   cubre los límites de 20/21 y de 40/41 km/h. Un exceso de 0 km/h no
-   sanciona.
-3. La `Denuncia` creada tiene `tipoDenunciante = RADAR`,
-   `agenteODispositivo` igual al `idRadar`, coordenadas, lugar, radar y
-   vehículo del CSV, y conductor nulo.
+1. Un CSV con tres captaciones, una de ellas sin superar el límite (el
+   `ServicioDenuncias` simulado devuelve `Optional.empty()`), crea
+   **exactamente dos** expedientes (`verify(servicio, times(2))`) y cuenta una
+   captación descartada.
+2. Cada línea válida llega a `ServicioDenuncias.crear` como un
+   `DenunciaRequest` con los valores de esa línea (comprueba el argumento con
+   un `ArgumentCaptor`).
+3. El expediente registrado usa el importe de la infracción de la denuncia
+   devuelta, el instructor fijo y la fecha de hoy como fecha de incoación.
 4. Una línea con columnas de menos, fecha mal formada, velocidad no
    numérica, tipo de vehículo desconocido o coordenadas fuera de rango se
    cuenta como inválida y **no impide** procesar las demás.
@@ -720,7 +832,7 @@ el del archivo apuntando a un `@TempDir` mediante `@DynamicPropertySource`):
 | 2 | Se detecta la creación de un fichero CSV nuevo en un tiempo razonable; los que no son CSV se ignoran |
 | 3 | La `WatchKey` se reinicia (`reset()`) tras procesar cada tanda de eventos |
 | 4 | El procesamiento del CSV se hace en un hilo distinto al del vigilante, que no se bloquea mientras tanto |
-| 5 | Cada captación que supera el límite queda registrada como expediente en el sistema de datos y archivada en disco, con la gravedad y el importe correctos |
+| 5 | Cada captación que supera el límite genera una denuncia mediante `ServicioDenuncias` y queda registrada como expediente en el sistema de datos y archivada en disco, con la gravedad y el importe correctos |
 | 6 | Un registro inválido se registra en el log con su línea y no impide procesar el resto del fichero |
 | 7 | El CSV procesado se mueve a `procesados/` (o `errores/`) y no se reprocesa |
 | 8 | El vigilante y el *pool* se detienen de forma ordenada al parar la aplicación, sin hilos colgados |
@@ -732,16 +844,16 @@ el del archivo apuntando a un `@TempDir` mediante `@DynamicPropertySource`):
 
 :::warning[Concurrencia]
 `ServicioExpedientes` y `RepositorioExpedientesMemoria` serán invocados
-desde varios hilos. Comprueba que el repositorio (basado en
+desde varios hilos, igual que `ServicioDenuncias` (cuya atomicidad se
+comprobó en A1.3). Comprueba que el repositorio de expedientes (basado en
 `ConcurrentHashMap`) y la generación del número de expediente son seguros
-ante accesos concurrentes, que el alta de radares y vehículos («buscar o dar
-de alta») es atómica, y que los contadores del estado usan
+ante accesos concurrentes, y que los contadores del estado usan
 `AtomicInteger`/`LongAdder` o equivalente.
 :::
 
 ---
 
-## A1.4 — Jerarquía de excepciones `MultagalException`
+## A1.5 — Jerarquía de excepciones `MultagalException`
 
 **Objetivo:** diseñar e implementar la jerarquía de excepciones propia del
 proyecto, sustituyendo la propagación directa de excepciones de bajo nivel.
@@ -775,7 +887,8 @@ hechas.
    expedientes`. La ruta física solo aparece en la causa, que se registra en
    el log; nunca en el mensaje.
 2. Revisa `AlmacenExpedientes`, `ServicioPurgaExpedientes`,
-   `VigilanteBuzonEntrada` y `ProcesadorCapturas`: en cualquier punto donde captures una
+   `VigilanteBuzonEntrada` y `ProcesadorCapturas` (y `ServicioDenuncias`, que
+   debe lanzar excepciones de dominio, no `IllegalStateException` ni similares): en cualquier punto donde captures una
    `IOException` o subclase de `java.nio.file`, tradúcela a la excepción de
    dominio correspondiente, conservando la causa original.
 3. Usa `try-with-resources` en todos los puntos donde abras un recurso
@@ -790,7 +903,7 @@ hechas.
 ### Entregable
 
 Paquete `domain.exception` con la jerarquía completa, y el código de A1.1,
-A1.2 y A1.3 actualizado para lanzar excepciones de dominio en lugar de
+A1.2, A1.3 y A1.4 actualizado para lanzar excepciones de dominio en lugar de
 excepciones de `java.nio.file` sin traducir, junto con las pruebas
 descritas a continuación.
 
