@@ -31,12 +31,12 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://permuta.github.io/',
+  url: 'https://profesorpermuta.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/',
+  baseUrl: '/web-AD/',
 
-  organizationName: 'permuta',
-  projectName: 'web-acceso-datos',
+  organizationName: 'ProfesorPermuta',
+  projectName: 'web-AD',
 
   onBrokenLinks: 'warn',
 
